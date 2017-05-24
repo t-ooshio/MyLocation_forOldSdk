@@ -1,25 +1,25 @@
-package jp.sio.testapp.mylocation;
+package jp.sio.testapp.mylocation.Activity;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.Handler;
-import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import jp.sio.testapp.mylocation.Presenter.MyLocationPresenter;
+import jp.sio.testapp.mylocation.R;
 
-public class MainActivity extends AppCompatActivity {
+
+public class MyLocationActivity extends AppCompatActivity {
 
     private Button buttonStart;
     private Button buttonStop;
     private TextView tvResult;
     private Context context = this;
     private MyLocationPresenter presenter;
-    SharedPreferences settingPref;
-    SharedPreferences.Editor editor;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,28 +50,28 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    protected void pushBtnStart(){
+    public void pushBtnStart(){
         showTextView("start");
         presenter.locationStart();
     }
-    protected void pushBtnStop(){
+    public void pushBtnStop(){
         showTextView("stop");
     }
 
-    protected void onBtnStart(){
+    public void onBtnStart(){
         buttonStart.setEnabled(true);
     }
-    protected void offBtnStart(){
+    public void offBtnStart(){
         buttonStart.setEnabled(false);
     }
 
-    protected void onBtnStop(){
+    public void onBtnStop(){
         buttonStop.setEnabled(true);
     }
-    protected void offBtnStop(){
+    public void offBtnStop(){
         buttonStop.setEnabled(false);
     }
-    protected void showTextView(String str){
+    public void showTextView(String str){
         tvResult.setText(str);
     }
 
