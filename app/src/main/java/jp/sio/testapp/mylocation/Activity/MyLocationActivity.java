@@ -1,13 +1,13 @@
 package jp.sio.testapp.mylocation.Activity;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import jp.sio.testapp.mylocation.L;
 import jp.sio.testapp.mylocation.Presenter.MyLocationPresenter;
 import jp.sio.testapp.mylocation.R;
 
@@ -16,6 +16,7 @@ public class MyLocationActivity extends AppCompatActivity {
 
     private Button buttonStart;
     private Button buttonStop;
+    private Button buttonSetting;
     private TextView tvResult;
     private Context context = this;
     private MyLocationPresenter presenter;
@@ -25,11 +26,11 @@ public class MyLocationActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        presenter = new MyLocationPresenter();
-        presenter.setActivity(this);
+        presenter = new MyLocationPresenter(this);
 
         buttonStart = (Button)findViewById(R.id.buttonStart);
         buttonStop = (Button)findViewById(R.id.buttonStop);
+        buttonSetting = (Button)findViewById(R.id.buttonSetting);
         tvResult = (TextView)findViewById(R.id.textViewResult);
 
         buttonStart.setOnClickListener(new View.OnClickListener() {
@@ -37,6 +38,7 @@ public class MyLocationActivity extends AppCompatActivity {
             public void onClick(View v) {
                 offBtnStart();
                 onBtnStop();
+                offBtnSetting();
                 pushBtnStart();
             }
         });
@@ -45,18 +47,40 @@ public class MyLocationActivity extends AppCompatActivity {
             public void onClick(View v) {
                 onBtnStart();
                 offBtnStop();
+                onBtnSetting();
                 pushBtnStop();
             }
         });
+        buttonSetting.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                pushBtnSetting();
+            }
+        });
+    }
+    @Override
+    protected void onStart(){
+        super.onStart();
+        presenter.checkPermission();
+    }
+    public void showTextView(String str){
+        tvResult.setText(str);
     }
 
     public void pushBtnStart(){
         showTextView("start");
         presenter.locationStart();
+
     }
     public void pushBtnStop(){
         showTextView("stop");
+        presenter.locationStop();
     }
+    public void pushBtnSetting(){
+        showTextView("setting");
+        presenter.settingStart();
+    }
+
 
     public void onBtnStart(){
         buttonStart.setEnabled(true);
@@ -71,8 +95,11 @@ public class MyLocationActivity extends AppCompatActivity {
     public void offBtnStop(){
         buttonStop.setEnabled(false);
     }
-    public void showTextView(String str){
-        tvResult.setText(str);
-    }
 
+    public void onBtnSetting(){
+        buttonSetting.setEnabled(true);
+    }
+    public void offBtnSetting(){
+        buttonSetting.setEnabled(false);
+    }
 }

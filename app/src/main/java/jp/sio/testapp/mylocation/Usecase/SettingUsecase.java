@@ -1,5 +1,7 @@
 package jp.sio.testapp.mylocation.Usecase;
 
+import android.content.Context;
+
 import jp.sio.testapp.mylocation.Repository.SettingPref;
 
 /**
@@ -11,5 +13,17 @@ import jp.sio.testapp.mylocation.Repository.SettingPref;
 
 public class SettingUsecase {
     private SettingPref settingPref;
+    private Context context;
 
+    public SettingUsecase(Context context){
+        this.context = context;
+        settingPref = new SettingPref(context);
+        settingPref.createPref();
+    }
+    public String getTestParam(){
+        return settingPref.getTestParam();
+    }
+    public void setTestParam(String str){
+        settingPref.setTestParam(str);
+    }
 }
