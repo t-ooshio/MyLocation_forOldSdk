@@ -12,8 +12,12 @@ public class SettingPresenter {
     SettingActivity activity;
     SettingUsecase usecase;
 
-    SettingPresenter(SettingActivity activity){
+    public SettingPresenter(SettingActivity activity){
         this.activity = activity;
         usecase = new SettingUsecase(this.activity.getApplicationContext());
+    }
+
+    public void setSetting(){
+
     }
 }

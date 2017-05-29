@@ -80,6 +80,18 @@ public class MyLocationPresenter {
         activity.startActivity(settingIntent);
     }
 
+    public void startProgressDialog(String message){
+        activity.startProgressDialog(message);
+    }
+
+    public void stopProgressDialog(){
+        activity.stopProgressDialog();
+    }
+
+    public void showToast(String message){
+        activity.showToast(message);
+    }
+
     public class LocationReceiver extends BroadcastReceiver{
         Boolean isFix;
         double lattude, longitude, ttff;

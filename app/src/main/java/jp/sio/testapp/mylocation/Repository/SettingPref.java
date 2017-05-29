@@ -29,6 +29,9 @@ public class SettingPref {
         editor = settingPref.edit();
     }
 
+    public void setCount(int count){
+    }
+
     public void setTestParam(String str){
         editor.putString(String.valueOf(R.string.settingTestParam),str);
         editor.apply();

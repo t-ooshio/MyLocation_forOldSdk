@@ -56,9 +56,11 @@ public class UebService extends Service implements LocationListener{
         }
     }
 
+    //TODO:
     //サービスがKillされるのを防止する処理
     // Android 6.0 以降の省電力の処理確認してから作る予定
 
+    //TODO:
     //スリープ時に停止するのを防止
     //これもAndroid 6.0 以降の省電力の処理確認してから作る予定
     //PowerManagerを使う
@@ -86,9 +88,10 @@ public class UebService extends Service implements LocationListener{
     public void locationStart(){
         locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
 
-        //設定でColdすることになっているならって判定を入れる
+        //TODO:設定でColdすることになっているならって判定を入れる
         coldLocation(locationManager);
-        //MyLocationUsecaseで起動時にPermissionCheckを行っている
+
+        //MyLocationUsecaseで起動時にPermissionCheckを行っているので
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,0,0,this);
         L.d("requestLocationUpdates");
 
@@ -101,6 +104,12 @@ public class UebService extends Service implements LocationListener{
         //TODO: 測位開始の時刻を取得する処理を追加する
     }
 
+    /**
+     * 測位が終わって、次の測位を行う準備処理
+     */
+    public void locationStop(){
+
+    }
     /**
      * 測位が終了してこのServiceを閉じるときの処理
      * 測位回数満了、停止ボタンによる停止を想定した処理
@@ -170,6 +179,15 @@ public class UebService extends Service implements LocationListener{
                 @Override
                 public void run() {
                     isLocationFix = false;
+                    //TODO:TTFFを計測した値いれること。
+                    sendBroadCast(isLocationFix, -1, -1, 0);
+                    //TODO:測位回数のチェックをして回数を満了していなかったらInterval後、測位再開する
+                    //測位停止Timerの設定
+                    if(intervalTimer == null){
+                        intervalTimerTask = new IntervalTimerTask();
+                        intervalTimer = new Timer(true);
+                        intervalTimer.schedule(intervalTimerTask,settingInterval);
+                    }
                 }
             });
         }
@@ -183,7 +201,7 @@ public class UebService extends Service implements LocationListener{
 
         @Override
         public void run() {
-
+            locationStart();
         }
     }
 
