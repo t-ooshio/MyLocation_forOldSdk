@@ -26,4 +26,25 @@ public class SettingUsecase {
     public void setTestParam(String str){
         settingPref.setTestParam(str);
     }
+
+
+    /**
+     * 設定を初期値にする
+     * 初期値はまだ決めてないので空
+     */
+    public void setDefaultSetting(){
+
+    }
+    //とりあえずテスト用の仮数値
+    public int getCount(){
+        return 5;
+    }
+
+    public double getTimeout(){
+        return 10.0;
+    }
+
+    public double getInterval(){
+        return 10.0;
+    }
 }

@@ -65,6 +65,15 @@ public class MyLocationPresenter {
 
         //TODO どの測位を行うかをSettingから読み込み、実行するServiceを選択する処理を追加する
         locationserviceIntent = new Intent(activity.getApplicationContext(),UebService.class);
+
+        //TODO:とりあえずテスト用の適当数値を設定 あとで設定から読むように変える
+        int count = 3;
+        long timeout = 30;
+        long interval = 30;
+        locationserviceIntent.putExtra(activity.getResources().getString(R.string.settingCount),count);
+        locationserviceIntent.putExtra(activity.getResources().getString(R.string.settingTimeout),timeout);
+        locationserviceIntent.putExtra(activity.getResources().getString(R.string.settingInterval),interval);
+
         activity.startService(locationserviceIntent);
         IntentFilter filter = new IntentFilter(activity.getResources().getString(R.string.locationUeb));
         activity.registerReceiver(locationReceiver,filter);
