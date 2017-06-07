@@ -20,12 +20,6 @@ public class SettingUsecase {
         settingPref = new SettingPref(context);
         settingPref.createPref();
     }
-    public String getTestParam(){
-        return settingPref.getTestParam();
-    }
-    public void setTestParam(String str){
-        settingPref.setTestParam(str);
-    }
 
 
     /**

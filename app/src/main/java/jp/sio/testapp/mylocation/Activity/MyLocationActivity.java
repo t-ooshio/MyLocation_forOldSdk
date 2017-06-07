@@ -1,7 +1,6 @@
 package jp.sio.testapp.mylocation.Activity;
 
 import android.content.Context;
-import android.os.Process;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -10,7 +9,6 @@ import android.widget.TextView;
 import android.app.ProgressDialog;
 import android.widget.Toast;
 
-import jp.sio.testapp.mylocation.L;
 import jp.sio.testapp.mylocation.Presenter.MyLocationPresenter;
 import jp.sio.testapp.mylocation.R;
 
@@ -110,7 +108,7 @@ public class MyLocationActivity extends AppCompatActivity {
 
     public void startProgressDialog(String message){
         progressDialog = new ProgressDialog(this);
-        progressDialog.setMessage(message);
+        progressDialog.setTitle(message);
         progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         progressDialog.show();
     }

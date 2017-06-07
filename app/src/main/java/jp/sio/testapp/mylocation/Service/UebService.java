@@ -43,6 +43,7 @@ public class UebService extends Service implements LocationListener{
     private long settingInterval;
     private long settingTimeout;
     private int settingSuplEndWaitTime;
+    private int settingDelAssistdatatime;
 
     //測位中の測位回数
     private int runningCount;
@@ -79,11 +80,17 @@ public class UebService extends Service implements LocationListener{
         super.onStartCommand(intent,flags,startid);
         L.d("onStartCommand");
 
+        //設定値の取得
+        // *1000は sec → msec の変換
         settingCount = intent.getIntExtra(getBaseContext().getString(R.string.settingCount),0);
         settingTimeout = intent.getLongExtra(getBaseContext().getString(R.string.settingTimeout),0) * 1000;
         settingInterval = intent.getLongExtra(getBaseContext().getString(R.string.settingInterval),0) * 1000;
+        settingSuplEndWaitTime = intent.getIntExtra(getResources().getString(R.string.settingSuplEndWaitTime),0) * 1000;
+        settingDelAssistdatatime = intent.getIntExtra(getResources().getString(R.string.settinDelAssistdataTime),0) * 1000;
+
         runningCount = 0;
         L.d("count:" + settingCount + " Timeout:" + settingTimeout + " Interval:" + settingInterval);
+        L.d("suplendwaittime" + settingSuplEndWaitTime + " " + "DelAssist" + settingDelAssistdatatime);
         locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
         locationStart();
 
@@ -135,7 +142,7 @@ public class UebService extends Service implements LocationListener{
             @Override
             public void run() {
                 L.d("resultHandler.post");
-                sendBroadCast(isLocationFix,location.getLatitude(),location.getLongitude(),ttff);
+                sendLocationBroadCast(isLocationFix,location.getLatitude(),location.getLongitude(),ttff);
             }
         });
         L.d(location.getLatitude() + " " + location.getLongitude());
@@ -174,7 +181,7 @@ public class UebService extends Service implements LocationListener{
             @Override
             public void run() {
                 L.d("resultHandler.post");
-                sendBroadCast(isLocationFix,-1,-1,ttff);
+                sendLocationBroadCast(isLocationFix,-1,-1,ttff);
             }
         });
 
@@ -230,9 +237,22 @@ public class UebService extends Service implements LocationListener{
      * アシストデータの削除
      */
     private void coldLocation(LocationManager lm){
+        //TODO: cold処理始まったことを上の層に通知する処理を入れる
+        sendColdBroadCast(getResources().getString(R.string.categoryColdStart));
+        L.d("coldBroadcast:" + getResources().getString(R.string.categoryColdStart));
         boolean coldResult = lm.sendExtraCommand(LocationManager.GPS_PROVIDER,"delete_aiding_data",null);
+
         L.d("delete_aiding_data:result " + coldResult);
-        //TODO 削除中であることを通知して3秒ぐらい待つ処理を上に投げたい
+        try{
+            Thread.sleep(settingDelAssistdatatime);
+        }catch (InterruptedException e){
+            e.printStackTrace();
+            L.d("coldLocationSleepError");
+        }
+        sendColdBroadCast(getResources().getString(R.string.categoryColdStop));
+
+        //TODO: cold処理終わったことを上の層に通知する処理を入れる
+
     }
 
     /**
@@ -279,14 +299,27 @@ public class UebService extends Service implements LocationListener{
         locationManager.removeUpdates(this);
     }
 
-    protected void sendBroadCast(Boolean fix,double lattude,double longitude,double ttff){
-        L.d("send");
+    protected void sendLocationBroadCast(Boolean fix,double lattude,double longitude,double ttff){
+        L.d("sendLocation");
         Intent broadcastIntent = new Intent(getResources().getString(R.string.locationUeb));
+        broadcastIntent.putExtra(getResources().getString(R.string.category),getResources().getString(R.string.categoryLocation));
         broadcastIntent.putExtra(getResources().getString(R.string.TagisFix),fix);
         broadcastIntent.putExtra(getResources().getString(R.string.TagLat),lattude);
         broadcastIntent.putExtra(getResources().getString(R.string.TagLong),longitude);
         broadcastIntent.putExtra(getResources().getString(R.string.Tagttff),ttff);
 
+        sendBroadcast(broadcastIntent);
+    }
+    protected void sendColdBroadCast(String category){
+        Intent broadcastIntent = new Intent(getResources().getString(R.string.locationUeb));
+
+        if(category.equals(getResources().getString(R.string.categoryColdStart))){
+            L.d("ColdStart");
+            broadcastIntent.putExtra(getResources().getString(R.string.category),getResources().getString(R.string.categoryColdStart));
+        }else if(category.equals(getResources().getString(R.string.categoryColdStop))){
+            L.d("ColdStop");
+            broadcastIntent.putExtra(getResources().getString(R.string.category),getResources().getString(R.string.categoryColdStop));
+        }
         sendBroadcast(broadcastIntent);
     }
 

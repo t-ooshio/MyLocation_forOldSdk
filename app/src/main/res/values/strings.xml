@@ -10,7 +10,8 @@
     <string name="settingCount">COUNT</string>
     <string name="settingTimeout">TIMEOUT</string>
     <string name="settingInterval">INTERVAL</string>
-    <string name="settingTestParam">TESTPARAM</string>
+    <string name="settingSuplEndWaitTime">SUPLENDWAITTIME</string>
+    <string name="settinDelAssistdataTime">DelAssistdataTime</string>
 
     <!---測位種別用の文字列定数 -->
     <string name="locationUeb">LocationUeb</string>
@@ -24,4 +25,11 @@
     <string name="TagLat">lattude</string>
     <string name="TagLong">longitude</string>
     <string name="Tagttff">TTFF</string>
+
+    <!--ServiceからPresentationが受け取る値の種類-->
+    <!--この値によってActivityに対する処理を変える-->
+    <string name="category">category</string>
+    <string name="categoryLocation">categoryLocation</string>
+    <string name="categoryColdStart">CategoryColdStart</string>
+    <string name="categoryColdStop">CategoryColdStop</string>
 </resources>

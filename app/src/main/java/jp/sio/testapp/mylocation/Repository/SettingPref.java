@@ -33,16 +33,7 @@ public class SettingPref {
     }
 
     public void setTestParam(String str){
-        editor.putString(String.valueOf(R.string.settingTestParam),str);
         editor.apply();
         editor.commit();
-    }
-    public String getTestParam(){
-        return settingPref.getString(String.valueOf(String.valueOf(R.string.settingTestParam)),"default");
-    }
-    public String testMethod(String str){
-        createPref();
-        editor.putString(String.valueOf(R.string.settingTestParam),str);
-        return settingPref.getString(String.valueOf(R.string.settingTestParam),"default");
     }
 }
