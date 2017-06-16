@@ -1,6 +1,10 @@
 package jp.sio.testapp.mylocation.Activity;
 
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
+import android.os.Build;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -19,7 +23,6 @@ public class MyLocationActivity extends AppCompatActivity {
     private Button buttonStop;
     private Button buttonSetting;
     private TextView tvResult;
-    private static ProgressDialog progressDialog;
 
     private Context context = this;
     private MyLocationPresenter presenter;
@@ -106,19 +109,6 @@ public class MyLocationActivity extends AppCompatActivity {
         buttonSetting.setEnabled(false);
     }
 
-    public void startProgressDialog(String message){
-        progressDialog = new ProgressDialog(this);
-        progressDialog.setTitle(message);
-        progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        progressDialog.show();
-    }
-
-    public void stopProgressDialog(){
-        if(progressDialog != null) {
-            progressDialog.dismiss();
-            progressDialog = null;
-        }
-    }
     public void showToast(String message){
         Toast.makeText(this,message,Toast.LENGTH_SHORT).show();
     }

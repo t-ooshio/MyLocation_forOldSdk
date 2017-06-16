@@ -37,6 +37,7 @@ public class MyLocationPresenter {
     private String categoryLocation;
     private String categoryColdStart;
     private String categoryColdStop;
+    private String categoryServiceStop;
 
     private UebService uebService;
     private ServiceConnection serviceConnectionUeb = new ServiceConnection() {
@@ -56,11 +57,12 @@ public class MyLocationPresenter {
     public MyLocationPresenter(MyLocationActivity activity){
         this.activity = activity;
         myLocationUsecase = new MyLocationUsecase(activity);
-        settingUsecase = new SettingUsecase(this.activity.getApplicationContext());
+        settingUsecase = new SettingUsecase(activity);
 
         categoryLocation = activity.getResources().getString(R.string.categoryLocation);
         categoryColdStart = activity.getResources().getString(R.string.categoryColdStart);
         categoryColdStop = activity.getResources().getString(R.string.categoryColdStop);
+        categoryServiceStop = activity.getResources().getString(R.string.categoryServiceEnd);
     }
 
     public void checkPermission(){
@@ -71,18 +73,19 @@ public class MyLocationPresenter {
 
         //TODO どの測位を行うかをSettingから読み込み、実行するServiceを選択する処理を追加する
         locationserviceIntent = new Intent(activity.getApplicationContext(),UebService.class);
+         int count = settingUsecase.getCount();
+         long timeout = settingUsecase.getTimeout();
+         long interval = settingUsecase.getInterval();
+         boolean isCold = settingUsecase.getIsCold();
+         int suplendwaittime = settingUsecase.getSuplEndWaitTime();
+         int delassisttime = settingUsecase.getDelAssistDataTime();
 
-        //TODO:とりあえずテスト用の適当数値を設定 あとで設定から読むように変える
-        int count = 3;
-        long timeout = 30;
-        long interval = 30;
-        int suplendwaittime = 3;
-        int delassisttime = 3;
         locationserviceIntent.putExtra(activity.getResources().getString(R.string.settingCount),count);
         locationserviceIntent.putExtra(activity.getResources().getString(R.string.settingTimeout),timeout);
         locationserviceIntent.putExtra(activity.getResources().getString(R.string.settingInterval),interval);
+        locationserviceIntent.putExtra(activity.getResources().getString(R.string.settingIsCold),isCold);
         locationserviceIntent.putExtra(activity.getResources().getString(R.string.settingSuplEndWaitTime),suplendwaittime);
-        locationserviceIntent.putExtra(activity.getResources().getString(R.string.settinDelAssistdataTime),delassisttime);
+        locationserviceIntent.putExtra(activity.getResources().getString(R.string.settingDelAssistdataTime),delassisttime);
         activity.startService(locationserviceIntent);
         IntentFilter filter = new IntentFilter(activity.getResources().getString(R.string.locationUeb));
         activity.registerReceiver(locationReceiver,filter);
@@ -90,20 +93,13 @@ public class MyLocationPresenter {
     }
 
     public void locationStop(){
+        activity.unbindService(serviceConnectionUeb);
         activity.stopService(locationserviceIntent);
     }
 
     public void settingStart(){
         settingIntent = new Intent(activity.getApplicationContext(), SettingActivity.class);
         activity.startActivity(settingIntent);
-    }
-
-    public void startProgressDialog(String message){
-        activity.startProgressDialog(message);
-    }
-
-    public void stopProgressDialog(){
-        activity.stopProgressDialog();
     }
 
     public void showToast(String message){
@@ -113,7 +109,6 @@ public class MyLocationPresenter {
     public class LocationReceiver extends BroadcastReceiver{
         Boolean isFix;
         double lattude, longitude, ttff;
-
         @Override
         public void onReceive(Context context, Intent intent) {
             Bundle bundle = intent.getExtras();
@@ -129,11 +124,16 @@ public class MyLocationPresenter {
 
             }else if(receiveCategory.equals(categoryColdStart)){
                 L.d("ReceiceColdStart");
-                startProgressDialog("アシストデータ削除中");
                 showToast("アシストデータ削除中");
             }else if(receiveCategory.equals(categoryColdStop)){
                 L.d("ReceiceColdStop");
-                stopProgressDialog();
+                showToast("アシストデータ削除終了");
+            }else if(receiveCategory.equals(categoryServiceStop)){
+                L.d("ServiceStop");
+                showToast("測位サービス終了");
+                activity.onBtnStart();
+                activity.offBtnStop();
+                activity.onBtnSetting();
             }
         }
     }

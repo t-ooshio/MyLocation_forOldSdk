@@ -2,6 +2,7 @@ package jp.sio.testapp.mylocation.Usecase;
 
 import android.content.Context;
 
+import jp.sio.testapp.mylocation.L;
 import jp.sio.testapp.mylocation.Repository.SettingPref;
 
 /**
@@ -21,24 +22,61 @@ public class SettingUsecase {
         settingPref.createPref();
     }
 
-
     /**
-     * 設定を初期値にする
-     * 初期値はまだ決めてないので空
+     * 設定を初期化する
      */
     public void setDefaultSetting(){
-
+        settingPref.setDefaultSetting();
     }
-    //とりあえずテスト用の仮数値
+
+    /*********************ここからSetter**********************/
+    public void setCount(int count){
+        settingPref.setCount(count);
+    }
+    public void setInterval(long interval){
+        settingPref.setInterval(interval);
+    }
+    public void setTimeout(long timeout){
+        settingPref.setTimeout(timeout);
+    }
+    public void setSuplEndWaitTIme(int suplEndWaitTIme){
+        settingPref.setSuplEndWaitTime(suplEndWaitTIme);
+    }
+    public void setDelAssistDataTime(int delAssistDataTime){
+        settingPref.setDelAssistDataTime(delAssistDataTime);
+    }
+    public void setIsCold(boolean iscold){
+        settingPref.setIsCold(iscold);
+    }
+    public void setLocationType(String locationType){
+        L.d("Usecase:"+locationType);
+        settingPref.setLocationType(locationType);
+    }
+
+     /*****************ここからGetter*******************/
+    public String getLocationType(){
+        return settingPref.getLocationType();
+    }
     public int getCount(){
-        return 5;
+        return settingPref.getCount();
+    }
+    public long getTimeout(){
+        return settingPref.getTimeout();
+    }
+    public long getInterval(){
+        return settingPref.getInterval();
+    }
+    public boolean getIsCold(){
+        return settingPref.getIsCold();
+    }
+    public int getSuplEndWaitTime(){
+        return settingPref.getSuplEndWaitTime();
+    }
+    public int getDelAssistDataTime(){
+        return settingPref.getDelAssistDataTime();
     }
 
-    public double getTimeout(){
-        return 10.0;
-    }
-
-    public double getInterval(){
-        return 10.0;
+    public void commitSetting(){
+        settingPref.commitSetting();
     }
 }
