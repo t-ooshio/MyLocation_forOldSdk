@@ -99,8 +99,6 @@ public class FlpService extends Service implements
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
         L.d("onCennectionFailed");
-        L.d(connectionResult.getErrorCode() + "");
-        L.d(connectionResult.getErrorMessage());
     }
 
     public class FlpService_Binder extends Binder {

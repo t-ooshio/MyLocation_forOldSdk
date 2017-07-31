@@ -13,17 +13,23 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.util.Xml;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.ProtocolException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -81,7 +87,65 @@ public class IareaService extends Service implements LocationListener {
     private String locationHeader;
 
     //requestクエリの作成
-    private String requestString = "https://api.spmode.ne.jp/nwLocation/GetLocation";
+    /** connection戻り値(正常終了)。 */
+    public static final int RESULT_OK = 0;
+    /** connection戻り値(異常終了)。 */
+    public static final int RESULT_NG = -1;
+    /** 接続タイムアウト(ミリ秒)。 */
+    private static final int CONNECT_TIMEOUT = 20000; // サーバ仕様は10秒
+    /** 読み取りタイムアウト(ミリ秒)。 */
+    private static final int READ_TIMEOUT = 40000; // サーバ仕様は36秒
+    /** 接続先URL。 */
+    private static final String OPEN_IAREA_REQUEST_URL = "https://api.spmode.ne.jp/nwLocation/GetLocation";
+    /** リクエストデータ。 */
+    private static final String REQUEST_DATA = new String(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n"
+                    + "<DDF ver=\"1.0\">\r\n"
+                    + "<RequestInfo>\r\n"
+                    + "<RequestParam>\r\n"
+                    + "<APIKey>\r\n"
+                    + "<APIKey1_ID>"
+                    + "xvgk4x85g2kjjce6"
+                    + "</APIKey1_ID >\r\n"
+                    + "<APIKey2> "
+                    + "4d7z5tct"
+                    + "</APIKey2>\r\n"
+                    + "</APIKey>\r\n"
+                    + "<OptionProperty>\r\n"
+                    + "<AreaCode></AreaCode>\r\n"
+                    + "<AreaName></AreaName>\r\n"
+                    + "<Adr></Adr>\r\n"
+                    + "<AdrCode></AdrCode>\r\n"
+                    + "<PostCode></PostCode>\r\n"
+                    + "</OptionProperty>\r\n"
+                    + "</RequestParam>\r\n"
+                    + "</RequestInfo>\r\n"
+                    + "</DDF>\r\n"
+    );
+    /** Resultコード(未設定)。 */
+    private static final int RESPONSECODE_NOT_SET = -1;
+    /** Resultコード(正常下限)。 */
+    private static final int RESPONSECODE_OKAY_LOWER = 2000;
+    /** Resultコード(正常上限)。 */
+    private static final int RESPONSECODE_OKAY_UPPER = 2999;
+
+    /** XMLTAG Resultコード。 */
+    private static final String XML_TAG_RESULTCODE = new String("ResultCode");
+    /** XMLTAG 緯度。 */
+    private static final String XML_TAG_GEO_LAT = new String("Lat");
+    /** XMLTAG 経度。 */
+    private static final String XML_TAG_GEO_LON = new String("Lon");
+    /** XMLTAG 測位時刻。 */
+    private static final String XML_TAG_GEO_TIME = new String("Time");
+    /**XMLTAG エラーメッセージ*/
+    private static final String XML_TAG_ERROR_MESSAGE = new String("Error");
+    /**XMLTAG メッセージ*/
+    private static final String XML_TAG_MESSAGE = new String("Message");
+    /** XML 緯度経度フォーマット。 */
+    private static final String XML_LATLON_FORMAT = new String("XYYY.ZZZZZ");
+
+    private Location location;
+
     private URL requestUrl = null;
     private StringBuffer xmlQuery;
     private String resJsonObjName = "resJsonObjName";
@@ -146,10 +210,11 @@ public class IareaService extends Service implements LocationListener {
         L.d("suplendwaittime" + settingSuplEndWaitTime + " " + "DelAssist" + settingDelAssistdatatime);
 
         try {
-            requestUrl = new URL(requestString);
+            requestUrl = new URL(OPEN_IAREA_REQUEST_URL);
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
+        location = new Location(LocationManager.GPS_PROVIDER);
         locationStart();
 
         return START_STICKY;
@@ -164,25 +229,8 @@ public class IareaService extends Service implements LocationListener {
 
         //他の測位ではここでCold処理入れてるがiAreaには無い…はず
         locationStartTime = System.currentTimeMillis();
-        L.d("httpResponseAsync");
 
-        AsyncTask<Void,Void,JSONObject> httpResponsAsync = new AsyncTask<Void,Void,JSONObject>() {
-            @Override
-            protected JSONObject doInBackground(Void... voids) {
-                JSONObject jsonObject;
-                jsonObject = httpResponse(createQuery());
-                return jsonObject;
-            }
-            @Override
-            protected void onPostExecute(JSONObject result) {
-                //TODO JSONオブジェクトの解析処理
-                //TODO 測位の成否、緯度経度TTFFとかをJSONオブジェクトから取得する
-                L.d("TestonPostExecute");
-            }
-
-        };
-        httpResponsAsync.execute();
-
+        connection();
         //測位停止Timerの設定
         L.d("SetStopTimer");
         stopTimerTask = new StopTimerTask();
@@ -301,6 +349,210 @@ public class IareaService extends Service implements LocationListener {
         //locationLog.endLogFile();
     }
 
+    /**
+     * オープンiエリア測位通信。
+     *
+     * @return boolean
+     */
+    public int connection() {
+        URL url = null;
+        try {
+            // URLを作成
+            url = new URL(OPEN_IAREA_REQUEST_URL);
+        } catch (MalformedURLException e) {
+            L.d("OpeniAreaHttpConnect.connection():MalformedURLException");
+            locationFailed();
+            return RESULT_NG;
+        }
+        L.d("OpeniAreaHttpConnect.connection():conn OK");
+
+        HttpURLConnection conn = null;
+        try {
+            // コネクションを作成
+            conn = (HttpURLConnection) url.openConnection();
+            url = null;
+            // メソッドを設定 (POST)
+            conn.setDoOutput(true);
+            conn.setDoInput(true);
+            conn.setRequestMethod("POST");
+            // リクエスト方式・ヘッダの設定
+            conn.setRequestProperty("Content-Type", "Application/xml; charset=UTF-8");
+            // リダイレクトの追跡は不要
+            conn.setInstanceFollowRedirects(false);
+            // タイムアウト設定
+            conn.setConnectTimeout(CONNECT_TIMEOUT);
+            conn.setReadTimeout(READ_TIMEOUT);
+        } catch (ProtocolException e) {
+            L.d("OpeniAreaHttpConnect.connection():MalformedURLException");
+            locationFailed();
+            return RESULT_NG;
+        } catch (IOException e) {
+            L.d("OpeniAreaHttpConnect.connection():IOException");
+            locationFailed();
+            return RESULT_NG;
+        }
+        StringBuilder response;
+        try {
+            // 接続
+            conn.connect();
+            // データ送信
+            OutputStreamWriter osw = new OutputStreamWriter(conn.getOutputStream());
+            try {
+                osw.write(REQUEST_DATA);
+                osw.flush();
+            } catch (IOException e) {
+                L.d("OpeniAreaHttpConnect.connection():IOException");
+                locationFailed();
+                return RESULT_NG;
+            } finally {
+                osw.close();
+            }
+            // レスポンスデータを取得
+            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            try {
+                String line;
+                response = new StringBuilder();
+
+                while ((line = reader.readLine()) != null) {
+                    response.append(line);
+                }
+                L.d("XML:" + response.toString());
+            } catch (IOException e) {
+                L.d("OpeniAreaHttpConnect.connection():IOException");
+                locationFailed();
+                return RESULT_NG;
+            } finally {
+                reader.close();
+            }
+
+        } catch (IOException e) {
+            L.d("OpeniAreaHttpConnect.connection():IOException");
+            locationFailed();
+            return RESULT_NG;
+        }
+        finally {
+            // 切断
+            conn.disconnect();
+        }
+        // レスポンスデータ確認
+        if (response.length() == 0) {
+            locationFailed();
+            return RESULT_NG;
+        }
+        // Resultコード・位置情報取得
+        int resultcode;
+        String latitude_text;
+        String longitude_text;
+        String error_message="nothing";
+        @SuppressWarnings("unused")
+        String time_text;
+        try {
+            resultcode = RESPONSECODE_NOT_SET;
+            latitude_text = null;
+            longitude_text = null;
+            time_text = null;
+            XmlPullParser parser = Xml.newPullParser();
+            try {
+                parser.setInput(new StringReader(response.toString()));
+            } catch (XmlPullParserException e) {
+                e.printStackTrace();
+            }
+            int e = parser.getEventType();
+
+            while (e != XmlPullParser.END_DOCUMENT) {
+                String tagname;
+                if (e == XmlPullParser.START_TAG) {
+                    tagname = parser.getName();
+                    if (tagname.equals(XML_TAG_RESULTCODE)) {
+                        // 次TAGを取得
+                        resultcode = Integer.valueOf(parser.nextText());
+                        // END_TAGに移動してなければ、TEXT部分にいると判断して次に移動(ICSより前verのバグ回避対応)
+                        if (parser.getEventType() != XmlPullParser.END_TAG) {
+                            parser.next();
+                        }
+                    } else if (tagname.equals(XML_TAG_GEO_LAT)) {
+
+                        latitude_text = parser.nextText();
+                        // END_TAGに移動してなければ、TEXT部分にいると判断して次に移動(ICSより前verのバグ回避対応)
+                        if (parser.getEventType() != XmlPullParser.END_TAG) {
+                            parser.next();
+                        }
+                    } else if (tagname.equals(XML_TAG_GEO_LON)) {
+
+                        longitude_text = parser.nextText();
+                        // END_TAGに移動してなければ、TEXT部分にいると判断して次に移動(ICSより前verのバグ回避対応)
+                        if (parser.getEventType() != XmlPullParser.END_TAG) {
+                            parser.next();
+                        }
+                    } else if (tagname.equals(XML_TAG_GEO_TIME)) {
+                        time_text = parser.nextText();
+                        // END_TAGに移動してなければ、TEXT部分にいると判断して次に移動(ICSより前verのバグ回避対応)
+                        if (parser.getEventType() != XmlPullParser.END_TAG) {
+                            parser.next();
+                        }
+                    } else if(tagname.equals(XML_TAG_ERROR_MESSAGE)){
+                        //エラーの場合、エラーメッセージを読み込む
+                        parser.next();
+                        tagname = parser.getName();
+                        L.d("OpeniAreaHttpConnect.connection():XML_ERROR:"+tagname);
+                        locationFailed();
+
+                        // END_TAGに移動してなければ、TEXT部分にいると判断して次に移動(ICSより前verのバグ回避対応)
+                        if (parser.getEventType() != XmlPullParser.END_TAG) {
+                            parser.next();
+                        }
+
+                        if(tagname.equals(XML_TAG_MESSAGE)){
+                            //エラーメッセージ（URLが入ってくると想定）
+                            error_message = parser.getText();
+                            L.d("OpeniAreaHttpConnect.connection():error_message:"+error_message);
+                            // END_TAGに移動してなければ、TEXT部分にいると判断して次に移動(ICSより前verのバグ回避対応)
+                            if (parser.getEventType() != XmlPullParser.END_TAG) {
+                                parser.next();
+                            }
+                        }
+                    }
+                }
+                // 次要素へ
+                e = parser.next();
+            }
+        } catch (NumberFormatException e) {
+            L.d("OpeniAreaHttpConnect.connection():NumberFormatException");
+            locationFailed();
+            return RESULT_NG;
+        } catch (XmlPullParserException e) {
+            L.d("OpeniAreaHttpConnect.connection():XmlPullParserException");
+            locationFailed();
+            return RESULT_NG;
+        } catch (IOException e) {
+            L.d("OpeniAreaHttpConnect.connection():IOException");
+            locationFailed();
+            return RESULT_NG;
+        }
+
+        // Resultコード確認
+        if (resultcode < RESPONSECODE_OKAY_LOWER
+                || resultcode > RESPONSECODE_OKAY_UPPER) {
+            L.d("OpeniAreaHttpConnect.connection():resultcode=" + String.valueOf(resultcode));
+            locationFailed();
+            return RESULT_NG;
+        }
+
+        // 位置情報設定
+        double latitude_double;
+        double longitude_double;
+        try {
+            latitude_double = convertLatLon(latitude_text);
+            longitude_double = convertLatLon(longitude_text);
+            location.setLatitude(latitude_double);
+            location.setLongitude(longitude_double);
+        } catch (IllegalArgumentException e) {
+            locationFailed();
+            return RESULT_NG;
+        }
+        locationSuccess(location);
+        return RESULT_OK;
+    }
     @Override
     public void onLocationChanged(final Location location) {
         locationSuccess(location);
@@ -315,11 +567,11 @@ public class IareaService extends Service implements LocationListener {
 
     /**
      * アシストデータの削除
+     * OpeniAreaには該当の処理は無い
+     * 他と形式をそろえるため一応クチだけは残しておく
      */
     private void coldLocation(LocationManager lm){
         sendColdBroadCast(getResources().getString(R.string.categoryColdStart));
-        L.d("coldBroadcast:" + getResources().getString(R.string.categoryColdStart));
-        boolean coldResult = lm.sendExtraCommand(LocationManager.GPS_PROVIDER,"delete_aiding_data",null);
         try {
             Thread.sleep(settingDelAssistdatatime);
         } catch (InterruptedException e) {
@@ -327,8 +579,62 @@ public class IareaService extends Service implements LocationListener {
             e.printStackTrace();
         }
 
-        L.d("delete_aiding_data:result " + coldResult);
+        L.d("delete_aiding_data_Stop");
         sendColdBroadCast(getResources().getString(R.string.categoryColdStop));
+    }
+
+    /**
+     * 基地局から取得した緯度・経度をdouble型に変換する。
+     *
+     * @param str 緯度経度(文字列)
+     * @return 緯度経度(double)
+     * @throws IllegalArgumentException 引数不正
+     */
+    private double convertLatLon(final String str) throws IllegalArgumentException {
+        // nullチェック
+        if (str == null) {
+            L.d("OpeniAreaHttpConnect.convertLatLon():input null");
+            throw new IllegalArgumentException();
+        }
+        // フォーマットサイズチェック
+        if (str.length() != XML_LATLON_FORMAT.length()) {
+            L.d("OpeniAreaHttpConnect.OpeniAreaHttpConnect.convertLatLon():format NG(size)");
+            L.d("OpeniAreaHttpConnect.OpeniAreaHttpConnect.convertLatLon():input=" + str);
+            throw new IllegalArgumentException();
+        }
+
+        // 北緯/南緯/東経/西経 確認
+        char direction = str.charAt(0);
+        boolean isMinus;
+        if (direction == 'N' || direction == 'E') {
+            // 北緯と東経は正数
+            isMinus = false;
+        } else if (direction == 'S' || direction == 'W') {
+            // 南緯と西経は負数
+            isMinus = true;
+        } else {
+            L.d("OpeniAreaHttpConnect.OpeniAreaHttpConnect.convertLatLon():format NG");
+            L.d("OpeniAreaHttpConnect.OpeniAreaHttpConnect.convertLatLon():input=" + str);
+            throw new IllegalArgumentException();
+        }
+
+        // 度数取得
+        double deg;
+        try {
+            deg = Double.valueOf(str.substring(1));
+        } catch (NumberFormatException e) {
+            L.d("OpeniAreaHttpConnect.convertLatLon():format NG");
+            L.d("OpeniAreaHttpConnect.OpeniAreaHttpConnect.convertLatLon():input=" + str);
+            throw new IllegalArgumentException();
+        } catch (IndexOutOfBoundsException e) {
+            L.d("OpeniAreaHttpConnect.convertLatLon():format NG");
+            L.d("OpeniAreaHttpConnect.OpeniAreaHttpConnect.convertLatLon():input=" + str);
+            throw new IllegalArgumentException();
+        }
+        if (isMinus == true) {
+            deg = -deg;
+        }
+        return deg;
     }
 
     /**
