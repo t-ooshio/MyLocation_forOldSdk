@@ -1,6 +1,7 @@
 package jp.sio.testapp.mylocation.Service;
 
 import android.app.Notification;
+import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
@@ -8,10 +9,9 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Binder;
 import android.os.Bundle;
-import android.app.Service;
+import android.os.Handler;
 import android.os.IBinder;
 import android.os.PowerManager;
-import android.os.Handler;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -23,12 +23,11 @@ import jp.sio.testapp.mylocation.R;
 import jp.sio.testapp.mylocation.Repository.LocationLog;
 
 /**
- * UEB測位を行うためのService
- * 測位回数、測位間隔、タイムアウト、SuplEndWaitTimeあたりが渡されればいいか？
+ * UEA測位を行うためのService
  * Created by NTT docomo on 2017/05/22.
  */
 
-public class UebService extends Service implements LocationListener {
+public class UeaService extends Service implements LocationListener {
 
     private LocationManager locationManager;
     private LocationLog locationLog;
@@ -44,7 +43,7 @@ public class UebService extends Service implements LocationListener {
     private IntervalTimerTask intervalTimerTask;
 
     //設定値の格納用変数
-    private final String locationType = "UEB";
+    private final String locationType = "UEA";
     private int settingCount;   // 0の場合は無制限に測位を続ける
     private long settingInterval;
     private long settingTimeout;
@@ -69,9 +68,9 @@ public class UebService extends Service implements LocationListener {
     private String settingHeader;
     private String locationHeader;
 
-    public class UebService_Binder extends Binder {
-        public UebService getService() {
-            return UebService.this;
+    public class UeaService_Binder extends Binder {
+        public UeaService getService() {
+            return UeaService.this;
         }
     }
 
@@ -84,7 +83,7 @@ public class UebService extends Service implements LocationListener {
         stopHandler = new Handler();
 
         settingHeader = getResources().getString(R.string.settingHeader) ;
-        locationHeader = getResources().getString(R.string.locationHeader);
+        locationHeader = getResources().getString(R.string.locationHeader) ;
 
     }
 
@@ -102,7 +101,7 @@ public class UebService extends Service implements LocationListener {
         //画面が消灯しないようにPowerManagerを使用
         powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         //PowerManagerの画面つけっぱなし設定SCREEN_BRIGHT_WAKE_LOCK、非推奨の設定値だが試験アプリ的にはあったほうがいいので使用
-        wakeLock = powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, getString(R.string.locationUeb));
+        wakeLock = powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, getString(R.string.locationUea));
         wakeLock.acquire();
 
         //設定値の取得
@@ -119,9 +118,9 @@ public class UebService extends Service implements LocationListener {
         locationLog = new LocationLog(this);
         locationLog.makeLogFile(settingHeader);
         locationLog.writeLog(
-                locationType + "," + settingCount + "," + settingTimeout
-                        + "," + settingInterval + "," + settingSuplEndWaitTime + ","
-                        + settingDelAssistdatatime + "," + settingIsCold);
+                locationType + "," + settingCount + "," + settingTimeout/1000
+                        + "," + settingInterval/1000 + "," + settingSuplEndWaitTime/1000 + ","
+                        + settingDelAssistdatatime/1000 + "," + settingIsCold);
         locationLog.writeLog(locationHeader);
         L.d("count:" + settingCount + " Timeout:" + settingTimeout + " Interval:" + settingInterval);
         L.d("suplendwaittime" + settingSuplEndWaitTime + " " + "DelAssist" + settingDelAssistdatatime);
@@ -143,7 +142,7 @@ public class UebService extends Service implements LocationListener {
         }
         locationStartTime = System.currentTimeMillis();
         //MyLocationUsecaseで起動時にPermissionCheckを行っているのでここでは行わない
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+        locationManager.requestSingleUpdate(LocationManager.GPS_PROVIDER,this,null);
         L.d("requestLocationUpdates");
 
         //測位停止Timerの設定
@@ -348,7 +347,7 @@ public class UebService extends Service implements LocationListener {
      */
     protected void sendLocationBroadCast(Boolean fix,double lattude,double longitude,double ttff){
         L.d("sendLocation");
-        Intent broadcastIntent = new Intent(getResources().getString(R.string.locationUeb));
+        Intent broadcastIntent = new Intent(getResources().getString(R.string.locationUea));
         broadcastIntent.putExtra(getResources().getString(R.string.category),getResources().getString(R.string.categoryLocation));
         broadcastIntent.putExtra(getResources().getString(R.string.TagisFix),fix);
         broadcastIntent.putExtra(getResources().getString(R.string.TagLat),lattude);
@@ -364,7 +363,7 @@ public class UebService extends Service implements LocationListener {
      * @param category
      */
     protected void sendColdBroadCast(String category){
-        Intent broadcastIntent = new Intent(getResources().getString(R.string.locationUeb));
+        Intent broadcastIntent = new Intent(getResources().getString(R.string.locationUea));
 
         if(category.equals(getResources().getString(R.string.categoryColdStart))){
             L.d("ColdStart");
@@ -403,7 +402,7 @@ public class UebService extends Service implements LocationListener {
     }
     @Override
     public IBinder onBind(Intent intent) {
-        return new UebService_Binder();
+        return new UeaService_Binder();
     }
 
     @Override

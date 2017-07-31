@@ -1,20 +1,33 @@
 package jp.sio.testapp.mylocation.Service;
 
 import android.app.Notification;
+import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Bundle;
-import android.app.Service;
+import android.os.Handler;
 import android.os.IBinder;
 import android.os.PowerManager;
-import android.os.Handler;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -23,14 +36,12 @@ import jp.sio.testapp.mylocation.R;
 import jp.sio.testapp.mylocation.Repository.LocationLog;
 
 /**
- * UEB測位を行うためのService
- * 測位回数、測位間隔、タイムアウト、SuplEndWaitTimeあたりが渡されればいいか？
+ * OpeniArea測位を行うためのService
  * Created by NTT docomo on 2017/05/22.
  */
 
-public class UebService extends Service implements LocationListener {
+public class IareaService extends Service implements LocationListener {
 
-    private LocationManager locationManager;
     private LocationLog locationLog;
     private PowerManager powerManager;
     private PowerManager.WakeLock wakeLock;
@@ -44,7 +55,7 @@ public class UebService extends Service implements LocationListener {
     private IntervalTimerTask intervalTimerTask;
 
     //設定値の格納用変数
-    private final String locationType = "UEB";
+    private final String locationType = "OpeniArea";
     private int settingCount;   // 0の場合は無制限に測位を続ける
     private long settingInterval;
     private long settingTimeout;
@@ -69,9 +80,16 @@ public class UebService extends Service implements LocationListener {
     private String settingHeader;
     private String locationHeader;
 
-    public class UebService_Binder extends Binder {
-        public UebService getService() {
-            return UebService.this;
+    //requestクエリの作成
+    private String requestString = "https://api.spmode.ne.jp/nwLocation/GetLocation";
+    private URL requestUrl = null;
+    private StringBuffer xmlQuery;
+    private String resJsonObjName = "resJsonObjName";
+    JSONObject jsonObject;
+
+    public class IareaService_Binder extends Binder {
+        public IareaService getService() {
+            return IareaService.this;
         }
     }
 
@@ -82,8 +100,9 @@ public class UebService extends Service implements LocationListener {
         resultHandler = new Handler();
         intervalHandler = new Handler();
         stopHandler = new Handler();
+        jsonObject = new JSONObject();
 
-        settingHeader = getResources().getString(R.string.settingHeader) ;
+        settingHeader = getResources().getString(R.string.settingHeader);
         locationHeader = getResources().getString(R.string.locationHeader);
 
     }
@@ -102,7 +121,7 @@ public class UebService extends Service implements LocationListener {
         //画面が消灯しないようにPowerManagerを使用
         powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         //PowerManagerの画面つけっぱなし設定SCREEN_BRIGHT_WAKE_LOCK、非推奨の設定値だが試験アプリ的にはあったほうがいいので使用
-        wakeLock = powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, getString(R.string.locationUeb));
+        wakeLock = powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, getString(R.string.locationiArea));
         wakeLock.acquire();
 
         //設定値の取得
@@ -125,7 +144,12 @@ public class UebService extends Service implements LocationListener {
         locationLog.writeLog(locationHeader);
         L.d("count:" + settingCount + " Timeout:" + settingTimeout + " Interval:" + settingInterval);
         L.d("suplendwaittime" + settingSuplEndWaitTime + " " + "DelAssist" + settingDelAssistdatatime);
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+        try {
+            requestUrl = new URL(requestString);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
         locationStart();
 
         return START_STICKY;
@@ -138,13 +162,26 @@ public class UebService extends Service implements LocationListener {
 
         L.d("locationStart");
 
-        if (settingIsCold) {
-            coldLocation(locationManager);
-        }
+        //他の測位ではここでCold処理入れてるがiAreaには無い…はず
         locationStartTime = System.currentTimeMillis();
-        //MyLocationUsecaseで起動時にPermissionCheckを行っているのでここでは行わない
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
-        L.d("requestLocationUpdates");
+        L.d("httpResponseAsync");
+
+        AsyncTask<Void,Void,JSONObject> httpResponsAsync = new AsyncTask<Void,Void,JSONObject>() {
+            @Override
+            protected JSONObject doInBackground(Void... voids) {
+                JSONObject jsonObject;
+                jsonObject = httpResponse(createQuery());
+                return jsonObject;
+            }
+            @Override
+            protected void onPostExecute(JSONObject result) {
+                //TODO JSONオブジェクトの解析処理
+                //TODO 測位の成否、緯度経度TTFFとかをJSONオブジェクトから取得する
+                L.d("TestonPostExecute");
+            }
+
+        };
+        httpResponsAsync.execute();
 
         //測位停止Timerの設定
         L.d("SetStopTimer");
@@ -188,10 +225,6 @@ public class UebService extends Service implements LocationListener {
             L.d(e.getMessage());
             e.printStackTrace();
         }
-        if(locationManager != null) {
-            locationManager.removeUpdates(this);
-        }
-
         //測位回数が設定値に到達しているかチェック
         if(runningCount == settingCount && settingCount != 0){
             serviceStop();
@@ -215,7 +248,6 @@ public class UebService extends Service implements LocationListener {
         locationStopTime = System.currentTimeMillis();
         runningCount++;
         isLocationFix = false;
-        locationManager.removeUpdates(this);
         ttff = (locationStopTime - locationStartTime) / 1000;
 
         //測位結果の通知
@@ -249,10 +281,6 @@ public class UebService extends Service implements LocationListener {
      */
     public void serviceStop(){
         L.d("serviceStop");
-        if(locationManager != null){
-            locationManager.removeUpdates(this);
-            locationManager = null;
-        }
         if(stopTimer != null){
             stopTimer.cancel();
             stopTimer = null;
@@ -348,7 +376,7 @@ public class UebService extends Service implements LocationListener {
      */
     protected void sendLocationBroadCast(Boolean fix,double lattude,double longitude,double ttff){
         L.d("sendLocation");
-        Intent broadcastIntent = new Intent(getResources().getString(R.string.locationUeb));
+        Intent broadcastIntent = new Intent(getResources().getString(R.string.locationiArea));
         broadcastIntent.putExtra(getResources().getString(R.string.category),getResources().getString(R.string.categoryLocation));
         broadcastIntent.putExtra(getResources().getString(R.string.TagisFix),fix);
         broadcastIntent.putExtra(getResources().getString(R.string.TagLat),lattude);
@@ -364,7 +392,7 @@ public class UebService extends Service implements LocationListener {
      * @param category
      */
     protected void sendColdBroadCast(String category){
-        Intent broadcastIntent = new Intent(getResources().getString(R.string.locationUeb));
+        Intent broadcastIntent = new Intent(getResources().getString(R.string.locationiArea));
 
         if(category.equals(getResources().getString(R.string.categoryColdStart))){
             L.d("ColdStart");
@@ -380,9 +408,87 @@ public class UebService extends Service implements LocationListener {
      * Serviceを破棄することを通知するBroadcast
      */
     protected void sendServiceEndBroadCast(){
-        Intent broadcastIntent = new Intent(getResources().getString(R.string.locationUeb));
+        Intent broadcastIntent = new Intent(getResources().getString(R.string.locationiArea));
         broadcastIntent.putExtra(getResources().getString(R.string.category),getResources().getString(R.string.categoryServiceEnd));
         sendBroadcast(broadcastIntent);
+    }
+
+    protected String createQuery(){
+        //リクエストボディ生成
+        xmlQuery = new StringBuffer();
+        xmlQuery.append("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>");
+        xmlQuery.append("<DDF ver=\"1.0\">");
+        xmlQuery.append("<RequestInfo>");
+        xmlQuery.append("<RequestParam>");
+        xmlQuery.append("<APIKey>");
+        //TODO APIKeyを設定する
+        xmlQuery.append("<APIKey1_ID>XXXXXXXXXX</APIKey1_ID>");
+        xmlQuery.append("<APIKey2>YYYYYYYYYY</APIKey2>");
+        xmlQuery.append("</APIKey>");
+        xmlQuery.append("<OptionProperty>");
+        xmlQuery.append("<AreaCode></AreaCode>");
+        xmlQuery.append("<AreaName></AreaName>");
+        xmlQuery.append("<Adr></Adr>");
+        xmlQuery.append("<AdrCode></AdrCode>");
+        xmlQuery.append("<PostCode></PostCode>");
+        xmlQuery.append("</OptionProperty>");
+        xmlQuery.append("</RequestParam>");
+        xmlQuery.append("</RequestInfo>");
+        xmlQuery.append("</DDF>");
+        String params = xmlQuery.toString();
+        return params;
+    }
+
+    public JSONObject httpResponse(String requestString){
+        HttpURLConnection con;
+        URL url;
+        JSONObject jsonData = null;
+        try {
+            // URLの作成
+            url = new URL(requestString);
+            // 接続用HttpURLConnectionオブジェクト作成
+            con = (HttpURLConnection)url.openConnection();
+            // リクエストメソッドの設定
+            con.setRequestMethod("POST");
+            // リダイレクトを自動で許可しない設定
+            con.setInstanceFollowRedirects(false);
+            // URL接続からデータを読み取る場合はtrue
+            con.setDoInput(true);
+            // URL接続にデータを書き込む場合はtrue
+            con.setDoOutput(true);
+            // 接続
+            con.connect();
+            //レスポンス取得
+            InputStream in = con.getInputStream();
+            String readSt = readInputStream(in);
+            byte bodyByte[] = new byte[1024];
+            in.read(bodyByte);
+            in.close();
+            jsonData = new JSONObject(readSt).getJSONObject(resJsonObjName);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return jsonData;
+    }
+
+    public String readInputStream(InputStream in) throws IOException, UnsupportedEncodingException {
+        StringBuffer sb = new StringBuffer();
+        String st = "";
+
+        BufferedReader br = new BufferedReader(new InputStreamReader(in, "UTF-8"));
+        while((st = br.readLine()) != null) {
+            sb.append(st);
+        }
+        try {
+            in.close();
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+        return sb.toString();
     }
 
     @Override
@@ -403,7 +509,7 @@ public class UebService extends Service implements LocationListener {
     }
     @Override
     public IBinder onBind(Intent intent) {
-        return new UebService_Binder();
+        return new IareaService_Binder();
     }
 
     @Override

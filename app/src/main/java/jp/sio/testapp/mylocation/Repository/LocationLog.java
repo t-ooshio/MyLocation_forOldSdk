@@ -1,6 +1,9 @@
 package jp.sio.testapp.mylocation.Repository;
 
+import android.content.Context;
+import android.content.Intent;
 import android.media.MediaScannerConnection;
+import android.net.Uri;
 import android.os.Environment;
 
 import java.io.BufferedWriter;
@@ -25,10 +28,17 @@ public class LocationLog {
     private File file;
     private String fileName;
     private String filePath;
-
     private BufferedWriter writer;
+
     //ファイルインデックス強制作成用
     private MediaScannerConnection scanner;
+    private MediaScannerConnection.MediaScannerConnectionClient scannerConnectionClient;
+    private Context context;
+
+    public LocationLog(Context context){
+        this.context = context;
+    }
+
     /**
      * Logファイルを作成
      */
@@ -75,15 +85,25 @@ public class LocationLog {
     }
     /**
      * Logファイルを閉じる(Readerとかを閉じる処理を想定)
+     *
      */
     public void endLogFile(){
+            scanFile();
         try {
-            //TODO scannerのコンストラクタにContextが必要 ここに渡すか別の床でやるか検討
-            scanner.scanFile(filePath,"txt");
             writer.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * ログファイルを端末再起動無しでも読み込むための処理
+     * ファイルインデックスを作成しなおせば良いと見たのでそれを実装
+     */
+    public void scanFile() {
+        Uri contentUri = Uri.fromFile(file);
+        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, contentUri);
+        context.sendBroadcast(mediaScanIntent);
     }
 
     //externalStrageのReadとWriteが可能かチェック
