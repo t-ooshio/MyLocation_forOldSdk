@@ -218,7 +218,7 @@ public class MyLocationPresenter {
                 ttff = bundle.getDouble(activity.getResources().getString(R.string.Tagttff));
                 L.d("onReceive");
                 L.d(isFix + "," + lattude + "," + longitude + "," + ttff );
-                activity.showTextViewResult("測位成否："+ isFix + "\n" + "緯度:" + lattude + "\n" + "軽度：" + longitude + "\n" + "TTFF：" + ttff);
+                activity.showTextViewResult("測位成否："+ isFix + "\n" + "緯度:" + lattude + "\n" + "経度:" + longitude + "\n" + "TTFF：" + ttff);
                 activity.showTextViewState(activity.getResources().getString(R.string.locationWait));
             }else if(receiveCategory.equals(categoryColdStart)){
                 L.d("ReceiceColdStart");

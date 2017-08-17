@@ -54,7 +54,7 @@ public class UebService extends Service implements LocationListener {
 
     //測位中の測位回数
     private int runningCount;
-    private long ttff;
+    private double ttff;
 
     //測位成功の場合:true 測位失敗の場合:false を設定
     private boolean isLocationFix;
@@ -63,7 +63,7 @@ public class UebService extends Service implements LocationListener {
     private Calendar calendar = Calendar.getInstance();
     private long locationStartTime;
     private long locationStopTime;
-    SimpleDateFormat simpleDateFormatHH = new SimpleDateFormat("HH:mm:ss.sss");
+    SimpleDateFormat simpleDateFormatHH = new SimpleDateFormat("HH:mm:ss.SSS");
 
     //ログ出力用のヘッダー文字列 Settingのヘッダーと測位結果のヘッダー
     private String settingHeader;
@@ -163,10 +163,11 @@ public class UebService extends Service implements LocationListener {
         //測位タイムアウトのタイマーをクリア
         if(stopTimer != null) {
             stopTimer.cancel();
+            stopTimer = null;
         }
         runningCount++;
         isLocationFix = true;
-        ttff = (locationStopTime - locationStartTime) / 1000;
+        ttff = (double)(locationStopTime - locationStartTime) / 1000;
         //測位結果の通知
         resultHandler.post(new Runnable() {
             @Override
@@ -178,7 +179,7 @@ public class UebService extends Service implements LocationListener {
         locationLog.writeLog(
                 simpleDateFormatHH.format(locationStartTime)  + "," +
                 simpleDateFormatHH.format(locationStopTime) + "," + isLocationFix + "," +
-                location.getLatitude() + "," + location.getLongitude() + "," + ttff
+                location.getLatitude() + "," + location.getLongitude() + "," + ttff + "," + location.getAccuracy()
         );
         L.d(location.getLatitude() + " " + location.getLongitude());
 
@@ -198,8 +199,12 @@ public class UebService extends Service implements LocationListener {
         }else{
             //回数満了してなければ測位間隔Timerを設定して次の測位の準備
             L.d("SuccessのIntervalTimer");
+            if(intervalTimer != null){
+                intervalTimer.cancel();
+                intervalTimer = null;
+            }
             intervalTimerTask = new IntervalTimerTask();
-            intervalTimer = new Timer(true);
+            intervalTimer = new Timer();
             L.d("Interval:" + settingInterval);
             intervalTimer.schedule(intervalTimerTask, settingInterval);
         }
@@ -216,8 +221,11 @@ public class UebService extends Service implements LocationListener {
         runningCount++;
         isLocationFix = false;
         locationManager.removeUpdates(this);
-        ttff = (locationStopTime - locationStartTime) / 1000;
+        ttff = (double)(locationStopTime - locationStartTime) / 1000;
 
+        if(stopTimer != null){
+            stopTimer = null;
+        }
         //測位結果の通知
         resultHandler.post(new Runnable() {
             @Override
@@ -237,6 +245,10 @@ public class UebService extends Service implements LocationListener {
         }else{
             L.d("FailedのIntervalTimer");
             //回数満了してなければ測位間隔Timerを設定して次の測位の準備
+            if(intervalTimer != null){
+                intervalTimer.cancel();
+                intervalTimer = null;
+            }
             intervalTimerTask = new IntervalTimerTask();
             intervalTimer = new Timer(true);
             L.d("Interval:" + settingInterval);
