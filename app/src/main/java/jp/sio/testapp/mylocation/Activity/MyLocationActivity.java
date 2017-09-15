@@ -41,18 +41,22 @@ public class MyLocationActivity extends AppCompatActivity {
         buttonStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                //UI操作
                 offBtnStart();
                 onBtnStop();
                 offBtnSetting();
+
                 pushBtnStart();
             }
         });
         buttonStop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                //UI操作
                 onBtnStart();
                 offBtnStop();
                 onBtnSetting();
+
                 pushBtnStop();
             }
         });
