@@ -6,9 +6,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.IBinder;
 
+import java.text.SimpleDateFormat;
 import java.util.logging.Handler;
 
 import jp.sio.testapp.mylocation.Activity.MyLocationActivity;
@@ -206,19 +209,40 @@ public class MyLocationPresenter {
     public class LocationReceiver extends BroadcastReceiver{
         Boolean isFix;
         double lattude, longitude, ttff;
+        long fixtimeEpoch;
+        String fixtimeUTC;
+        long elapseRealTImeNanos;
+
+        Location location = new Location(LocationManager.GPS_PROVIDER);
+        SimpleDateFormat fixTimeFormat = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ssZZZZ");
+
         @Override
         public void onReceive(Context context, Intent intent) {
             Bundle bundle = intent.getExtras();
             receiveCategory = bundle.getString(activity.getResources().getString(R.string.category));
 
             if(receiveCategory.equals(categoryLocation)){
+                location = bundle.getParcelable(activity.getResources().getString(R.string.TagLocation));
                 isFix = bundle.getBoolean(activity.getResources().getString(R.string.TagisFix));
-                lattude = bundle.getDouble(activity.getResources().getString(R.string.TagLat));
-                longitude = bundle.getDouble(activity.getResources().getString(R.string.TagLong));
+                if(isFix){
+                    lattude = location.getLatitude();
+                    longitude = location.getLongitude();
+                    fixtimeEpoch = location.getTime();
+                    fixtimeUTC = fixTimeFormat.format(fixtimeEpoch);
+                    elapseRealTImeNanos = location.getElapsedRealtimeNanos();
+                }else{
+                    lattude = -1;
+                    longitude = -1;
+                    fixtimeEpoch = -1;
+                    fixtimeUTC = "-1";
+                    elapseRealTImeNanos = -1;
+                }
                 ttff = bundle.getDouble(activity.getResources().getString(R.string.Tagttff));
                 L.d("onReceive");
                 L.d(isFix + "," + lattude + "," + longitude + "," + ttff );
-                activity.showTextViewResult("測位成否："+ isFix + "\n" + "緯度:" + lattude + "\n" + "経度:" + longitude + "\n" + "TTFF：" + ttff);
+                activity.showTextViewResult("測位成否："+ isFix + "\n" + "緯度:" + lattude + "\n" + "経度:" + longitude + "\n" + "TTFF：" + ttff
+                        + "\n" + "fixTimeEpoch:" + fixtimeEpoch + "\n" + "fixTimeUTC:" + fixtimeUTC + "\n"
+                        + "elapseRealTImeNanos:" + elapseRealTImeNanos);
                 activity.showTextViewState(activity.getResources().getString(R.string.locationWait));
             }else if(receiveCategory.equals(categoryColdStart)){
                 L.d("ReceiceColdStart");

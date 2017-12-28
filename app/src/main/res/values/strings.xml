@@ -35,8 +35,7 @@
 
     <!---測位結果をIntentで通知する場合の判別用のタグ-->
     <string name="TagisFix">isFix</string>
-    <string name="TagLat">lattude</string>
-    <string name="TagLong">longitude</string>
+    <string name="TagLocation">location</string>
     <string name="Tagttff">TTFF</string>
 
     <!--ServiceからPresentationが受け取る値の種類-->

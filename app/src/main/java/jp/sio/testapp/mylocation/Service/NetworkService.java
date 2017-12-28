@@ -171,7 +171,7 @@ public class NetworkService extends Service implements LocationListener {
             @Override
             public void run() {
                 L.d("resultHandler.post");
-                sendLocationBroadCast(isLocationFix,location.getLatitude(),location.getLongitude(),ttff);
+                sendLocationBroadCast(isLocationFix,location,ttff);
             }
         });
         locationLog.writeLog(
@@ -226,7 +226,8 @@ public class NetworkService extends Service implements LocationListener {
             @Override
             public void run() {
                 L.d("resultHandler.post");
-                sendLocationBroadCast(isLocationFix,-1,-1,ttff);
+                Location location = new Location(LocationManager.GPS_PROVIDER);
+                sendLocationBroadCast(isLocationFix,location,ttff);
             }
         });
         locationLog.writeLog(
@@ -349,17 +350,15 @@ public class NetworkService extends Service implements LocationListener {
     /**
      * 測位完了を上に通知するBroadcast 測位結果を入れる
      * @param fix 測位成功:True 失敗:False
-     * @param lattude 測位成功:緯度 測位失敗: -1
-     * @param longitude 測位成功:経度 測位失敗: -1
+     * @param location 測位結果
      * @param ttff 測位API実行～測位停止までの時間
      */
-    protected void sendLocationBroadCast(Boolean fix,double lattude,double longitude,double ttff){
+    protected void sendLocationBroadCast(Boolean fix,Location location,double ttff){
         L.d("sendLocation");
         Intent broadcastIntent = new Intent(getResources().getString(R.string.locationNw));
         broadcastIntent.putExtra(getResources().getString(R.string.category),getResources().getString(R.string.categoryLocation));
         broadcastIntent.putExtra(getResources().getString(R.string.TagisFix),fix);
-        broadcastIntent.putExtra(getResources().getString(R.string.TagLat),lattude);
-        broadcastIntent.putExtra(getResources().getString(R.string.TagLong),longitude);
+        broadcastIntent.putExtra(getResources().getString(R.string.TagLocation),location);
         broadcastIntent.putExtra(getResources().getString(R.string.Tagttff),ttff);
 
         sendBroadcast(broadcastIntent);

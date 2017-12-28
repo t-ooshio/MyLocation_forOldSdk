@@ -28,11 +28,13 @@
                 android:layout_height="wrap_content"
                 app:layout_constraintTop_toBottomOf="@+id/textViewLocationList"
                 >
+
                 <RadioButton
                     android:id="@+id/rbUeb"
-                    android:text="@string/locationUeb"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:text="@string/locationUeb" />
                 <RadioButton
                     android:id="@+id/rbUea"
                     android:text="@string/locationUea"

@@ -172,7 +172,7 @@ public class UeaService extends Service implements LocationListener {
             @Override
             public void run() {
                 L.d("resultHandler.post");
-                sendLocationBroadCast(isLocationFix,location.getLatitude(),location.getLongitude(),ttff);
+                sendLocationBroadCast(isLocationFix,location,ttff);
             }
         });
         locationLog.writeLog(
@@ -213,7 +213,7 @@ public class UeaService extends Service implements LocationListener {
      * 測位失敗の場合の処理
      * 今のところタイムアウトした場合のみを想定
      */
-    public void locationFailed(){
+    public void locationFailed(final Location location){
         L.d("locationFailed");
         //測位終了の時間を取得
         locationStopTime = System.currentTimeMillis();
@@ -227,7 +227,7 @@ public class UeaService extends Service implements LocationListener {
             @Override
             public void run() {
                 L.d("resultHandler.post");
-                sendLocationBroadCast(isLocationFix,-1,-1,ttff);
+                sendLocationBroadCast(isLocationFix,location,ttff);
             }
         });
         locationLog.writeLog(
@@ -316,6 +316,7 @@ public class UeaService extends Service implements LocationListener {
      * 測位タイムアウトしたときの処理
      */
     class StopTimerTask extends TimerTask{
+        private Location location = new Location(LocationManager.GPS_PROVIDER);
 
         @Override
         public void run() {
@@ -323,7 +324,7 @@ public class UeaService extends Service implements LocationListener {
                 @Override
                 public void run() {
                     L.d("StopTimerTask");
-                    locationFailed();
+                    locationFailed(location);
                 }
             });
         }
@@ -350,17 +351,15 @@ public class UeaService extends Service implements LocationListener {
     /**
      * 測位完了を上に通知するBroadcast 測位結果を入れる
      * @param fix 測位成功:True 失敗:False
-     * @param lattude 測位成功:緯度 測位失敗: -1
-     * @param longitude 測位成功:経度 測位失敗: -1
+     * @param location 測位結果
      * @param ttff 測位API実行～測位停止までの時間
      */
-    protected void sendLocationBroadCast(Boolean fix,double lattude,double longitude,double ttff){
+    protected void sendLocationBroadCast(Boolean fix,Location location,double ttff){
         L.d("sendLocation");
         Intent broadcastIntent = new Intent(getResources().getString(R.string.locationUea));
         broadcastIntent.putExtra(getResources().getString(R.string.category),getResources().getString(R.string.categoryLocation));
         broadcastIntent.putExtra(getResources().getString(R.string.TagisFix),fix);
-        broadcastIntent.putExtra(getResources().getString(R.string.TagLat),lattude);
-        broadcastIntent.putExtra(getResources().getString(R.string.TagLong),longitude);
+        broadcastIntent.putExtra(getResources().getString(R.string.TagLocation),location);
         broadcastIntent.putExtra(getResources().getString(R.string.Tagttff),ttff);
 
         sendBroadcast(broadcastIntent);
