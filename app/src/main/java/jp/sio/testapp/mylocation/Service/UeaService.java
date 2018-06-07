@@ -64,9 +64,6 @@ public class UeaService extends Service implements LocationListener {
     private long locationStopTime;
     SimpleDateFormat simpleDateFormatHH = new SimpleDateFormat("HH:mm:ss.SSS");
 
-    //ログ出力用のヘッダー文字列 Settingのヘッダーと測位結果のヘッダー
-    private String settingHeader;
-    private String locationHeader;
 
     public class UeaService_Binder extends Binder {
         public UeaService getService() {
@@ -81,9 +78,6 @@ public class UeaService extends Service implements LocationListener {
         resultHandler = new Handler();
         intervalHandler = new Handler();
         stopHandler = new Handler();
-
-        settingHeader = getResources().getString(R.string.settingHeader) ;
-        locationHeader = getResources().getString(R.string.locationHeader) ;
 
     }
 
@@ -114,16 +108,6 @@ public class UeaService extends Service implements LocationListener {
         settingDelAssistdatatime = intent.getIntExtra(getResources().getString(R.string.settingDelAssistdataTime), 0) * 1000;
         runningCount = 0;
 
-        //ログファイルの生成
-        locationLog = new LocationLog(this);
-        locationLog.makeLogFile(settingHeader);
-        locationLog.writeLog(
-                locationType + "," + settingCount + "," + settingTimeout/1000
-                        + "," + settingInterval/1000 + "," + settingSuplEndWaitTime/1000 + ","
-                        + settingDelAssistdatatime/1000 + "," + settingIsCold);
-        locationLog.writeLog(locationHeader);
-        L.d("count:" + settingCount + " Timeout:" + settingTimeout + " Interval:" + settingInterval);
-        L.d("suplendwaittime" + settingSuplEndWaitTime + " " + "DelAssist" + settingDelAssistdatatime);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         locationStart();
 
@@ -175,11 +159,6 @@ public class UeaService extends Service implements LocationListener {
                 sendLocationBroadCast(isLocationFix,location,ttff);
             }
         });
-        locationLog.writeLog(
-                simpleDateFormatHH.format(locationStartTime)  + "," +
-                simpleDateFormatHH.format(locationStopTime) + "," + isLocationFix + "," +
-                location.getLatitude() + "," + location.getLongitude() + "," + ttff + "," + location.getAccuracy()
-        );
         L.d(location.getLatitude() + " " + location.getLongitude());
 
         try {
@@ -230,11 +209,6 @@ public class UeaService extends Service implements LocationListener {
                 sendLocationBroadCast(isLocationFix,location,ttff);
             }
         });
-        locationLog.writeLog(
-                simpleDateFormatHH.format(locationStartTime)  + "," +
-                simpleDateFormatHH.format(locationStopTime) + "," + isLocationFix + "," +
-                "-1" + "," + "-1" + "," + ttff
-        );
         //測位回数が設定値に到達しているかチェック
         if(settingCount == runningCount && settingCount != 0){
             serviceStop();

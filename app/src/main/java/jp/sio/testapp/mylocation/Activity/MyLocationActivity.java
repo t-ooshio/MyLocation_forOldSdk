@@ -8,6 +8,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import jp.sio.testapp.mylocation.L;
 import jp.sio.testapp.mylocation.Presenter.MyLocationPresenter;
 import jp.sio.testapp.mylocation.R;
 
@@ -28,7 +29,7 @@ public class MyLocationActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        L.d("onCreate");
         presenter = new MyLocationPresenter(this);
 
         buttonStart = (Button)findViewById(R.id.buttonStart);
@@ -66,12 +67,14 @@ public class MyLocationActivity extends AppCompatActivity {
                 pushBtnSetting();
             }
         });
+        presenter.checkPermission();
+        presenter.mStart();
+
     }
     @Override
     protected void onStart(){
+        L.d("onStart");
         super.onStart();
-        presenter.checkPermission();
-        presenter.mStart();
     }
     public void showTextViewResult(String str){
         tvResult.setText(str);

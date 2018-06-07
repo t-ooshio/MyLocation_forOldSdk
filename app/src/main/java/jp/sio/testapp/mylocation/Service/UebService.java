@@ -63,7 +63,6 @@ public class UebService extends Service implements LocationListener {
     private Calendar calendar = Calendar.getInstance();
     private long locationStartTime;
     private long locationStopTime;
-    SimpleDateFormat simpleDateFormatHH = new SimpleDateFormat("HH:mm:ss.SSS");
 
     //ログ出力用のヘッダー文字列 Settingのヘッダーと測位結果のヘッダー
     private String settingHeader;
@@ -82,9 +81,6 @@ public class UebService extends Service implements LocationListener {
         resultHandler = new Handler();
         intervalHandler = new Handler();
         stopHandler = new Handler();
-
-        settingHeader = getResources().getString(R.string.settingHeader) ;
-        locationHeader = getResources().getString(R.string.locationHeader);
 
     }
 
@@ -115,16 +111,6 @@ public class UebService extends Service implements LocationListener {
         settingDelAssistdatatime = intent.getIntExtra(getResources().getString(R.string.settingDelAssistdataTime), 0) * 1000;
         runningCount = 0;
 
-        //ログファイルの生成
-        locationLog = new LocationLog(this);
-        locationLog.makeLogFile(settingHeader);
-        locationLog.writeLog(
-                locationType + "," + settingCount + "," + settingTimeout
-                        + "," + settingInterval + "," + settingSuplEndWaitTime + ","
-                        + settingDelAssistdatatime + "," + settingIsCold);
-        locationLog.writeLog(locationHeader);
-        L.d("count:" + settingCount + " Timeout:" + settingTimeout + " Interval:" + settingInterval);
-        L.d("suplendwaittime" + settingSuplEndWaitTime + " " + "DelAssist" + settingDelAssistdatatime);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         locationStart();
 
@@ -173,14 +159,9 @@ public class UebService extends Service implements LocationListener {
             @Override
             public void run() {
                 L.d("resultHandler.post");
-                sendLocationBroadCast(isLocationFix,location,ttff);
+                sendLocationBroadCast(isLocationFix,location,locationStartTime,locationStopTime);
             }
         });
-        locationLog.writeLog(
-                simpleDateFormatHH.format(locationStartTime)  + "," +
-                simpleDateFormatHH.format(locationStopTime) + "," + isLocationFix + "," +
-                location.getLatitude() + "," + location.getLongitude() + "," + ttff + "," + location.getAccuracy()
-        );
         L.d(location.getLatitude() + " " + location.getLongitude());
 
         try {
@@ -232,14 +213,9 @@ public class UebService extends Service implements LocationListener {
             public void run() {
                 L.d("resultHandler.post");
                 Location location = new Location(LocationManager.GPS_PROVIDER);
-                sendLocationBroadCast(isLocationFix,location,ttff);
+                sendLocationBroadCast(isLocationFix,location,locationStartTime,locationStopTime);
             }
         });
-        locationLog.writeLog(
-                simpleDateFormatHH.format(locationStartTime)  + "," +
-                simpleDateFormatHH.format(locationStopTime) + "," + isLocationFix + "," +
-                "-1" + "," + "-1" + "," + ttff
-        );
         //測位回数が設定値に到達しているかチェック
         if(settingCount == runningCount && settingCount != 0){
             serviceStop();
@@ -274,7 +250,6 @@ public class UebService extends Service implements LocationListener {
             intervalTimer.cancel();
             intervalTimer = null;
         }
-        locationLog.endLogFile();
         //Serviceを終わるときにForegroundも停止する
         stopForeground(true);
         sendServiceEndBroadCast();
@@ -356,15 +331,18 @@ public class UebService extends Service implements LocationListener {
      * 測位完了を上に通知するBroadcast 測位結果を入れる
      * @param fix 測位成功:True 失敗:False
      * @param location 測位結果
-     * @param ttff 測位API実行～測位停止までの時間
+     * @param locationStartTime 測位API実行の時間
+     * @param locationStopTime  測位API停止の時間
      */
-    protected void sendLocationBroadCast(Boolean fix,Location location,double ttff){
+    protected void sendLocationBroadCast(Boolean fix,Location location,long locationStartTime, long locationStopTime){
         L.d("sendLocation");
         Intent broadcastIntent = new Intent(getResources().getString(R.string.locationUeb));
         broadcastIntent.putExtra(getResources().getString(R.string.category),getResources().getString(R.string.categoryLocation));
         broadcastIntent.putExtra(getResources().getString(R.string.TagisFix),fix);
         broadcastIntent.putExtra(getResources().getString(R.string.TagLocation),location);
         broadcastIntent.putExtra(getResources().getString(R.string.Tagttff),ttff);
+        broadcastIntent.putExtra(getResources().getString(R.string.TagLocationStarttime),locationStartTime);
+        broadcastIntent.putExtra(getResources().getString(R.string.TagLocationStoptime),locationStopTime);
 
         sendBroadcast(broadcastIntent);
     }

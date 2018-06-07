@@ -8,9 +8,14 @@ import android.os.Environment;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 
@@ -28,7 +33,15 @@ public class LocationLog {
     private File file;
     private String fileName;
     private String filePath;
+    private String dirPath;
     private BufferedWriter writer;
+    private OutputStreamWriter outputStreamWriter;
+
+    private InputStream inputStream;
+    private OutputStream outputStream;
+    private FileOutputStream fileOutputStream;
+    private FileInputStream fileInputStream;
+
 
     //ファイルインデックス強制作成用
     private MediaScannerConnection scanner;
@@ -46,28 +59,30 @@ public class LocationLog {
         if(isExternalStrageWriteable()){
             createLogTime = System.currentTimeMillis();
             fileName = simpleDateFormat.format(createLogTime) + ".txt";
-            filePath = Environment.getExternalStorageDirectory().getPath() + "/"+ "MyLocation/" + fileName;
+            dirPath = Environment.getExternalStorageDirectory().getPath() + "/MyLocation/";
+            filePath = dirPath + fileName;
+            file = new File(filePath);
+
+            try {
+                if(!file.exists()){
+                    file.getParentFile().mkdir();
+                }
+                fileOutputStream = new FileOutputStream(file,true);
+                outputStreamWriter = new OutputStreamWriter(fileOutputStream, "UTF-8");
+                L.d("settingHeader:" + settingHeader);
+                outputStreamWriter.append(settingHeader+"\n");
+
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             L.d("LogFilePath:" + filePath);
 
-            file = new File(filePath);
-            file.getParentFile().mkdir();
         }else{
             L.d("ExternalStrage書き込み不可");
-        }
-        try{
-            writer = new BufferedWriter(new FileWriter(file,true));
-            L.d("settingHeader:" + settingHeader);
-            writer.write(settingHeader);
-            writer.newLine();
-        } catch (FileNotFoundException e) {
-            L.d(e.getMessage());
-            e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
-            L.d("UTF-8使えない");
-            e.printStackTrace();
-        } catch (IOException e) {
-            L.d("write失敗");
-            e.printStackTrace();
         }
     }
 
@@ -76,9 +91,10 @@ public class LocationLog {
      */
     public void writeLog(String log){
         try {
-            L.d("Log" + log);
-            writer.write(log);
-            writer.newLine();
+            L.d("Log:" + log);
+            outputStreamWriter.write(log + "\n");
+            //outputStreamWriter.newLine();
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -90,7 +106,7 @@ public class LocationLog {
     public void endLogFile(){
             scanFile();
         try {
-            writer.close();
+            outputStreamWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -101,9 +117,11 @@ public class LocationLog {
      * ファイルインデックスを作成しなおせば良いと見たのでそれを実装
      */
     public void scanFile() {
+
         Uri contentUri = Uri.fromFile(file);
         Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, contentUri);
         context.sendBroadcast(mediaScanIntent);
+
     }
 
     //externalStrageのReadとWriteが可能かチェック
@@ -113,6 +131,7 @@ public class LocationLog {
         if(Environment.MEDIA_MOUNTED.equals(state)){
             result = true;
         }
+        L.d("isExternalStrageWriteable:"+result);
         return result;
     }
 }

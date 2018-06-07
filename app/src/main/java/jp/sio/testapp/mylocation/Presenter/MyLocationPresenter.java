@@ -25,7 +25,7 @@ import jp.sio.testapp.mylocation.Service.UeaService;
 import jp.sio.testapp.mylocation.Service.UebService;
 import jp.sio.testapp.mylocation.Usecase.MyLocationUsecase;
 import jp.sio.testapp.mylocation.Usecase.SettingUsecase ;
-
+import jp.sio.testapp.mylocation.Repository.LocationLog;
 
 /**
  * Created by NTT docomo on 2017/05/23.
@@ -40,6 +40,7 @@ public class MyLocationPresenter {
     private Intent settingIntent;
     private Intent locationserviceIntent;
     private ServiceConnection runService;
+    private LocationLog locationLog;
 
     private String receiveCategory;
     private String categoryLocation;
@@ -60,6 +61,10 @@ public class MyLocationPresenter {
     private boolean isCold;
     private int suplendwaittime;
     private int delassisttime;
+
+    private String settingHeader;
+    private String locationHeader;
+
 
     private ServiceConnection serviceConnectionUeb = new ServiceConnection() {
         @Override
@@ -129,6 +134,9 @@ public class MyLocationPresenter {
         categoryColdStart = activity.getResources().getString(R.string.categoryColdStart);
         categoryColdStop = activity.getResources().getString(R.string.categoryColdStop);
         categoryServiceStop = activity.getResources().getString(R.string.categoryServiceEnd);
+        settingHeader = activity.getResources().getString(R.string.settingHeader) ;
+        locationHeader =activity. getResources().getString(R.string.locationHeader);
+
     }
 
     public void checkPermission(){
@@ -145,21 +153,40 @@ public class MyLocationPresenter {
         suplendwaittime = settingUsecase.getSuplEndWaitTime();
         delassisttime = settingUsecase.getDelAssistDataTime();
 
-        activity.showTextViewSetting("測位方式:" + locationType + "\n" + "測位回数:" + count + "\n" + "タイムアウト:" + timeout + "\n" +
-                "測位間隔:" + interval + "\n" + "Cold:" + isCold + "\n"
-                + "suplEndWaitTime:" + suplendwaittime + "\n" + "アシストデータ削除時間:" + delassisttime + "\n");
         activity.showTextViewState(activity.getResources().getString(R.string.locationStop));
     }
 
     public void locationStart(){
         IntentFilter filter = null;
+        L.d(locationType + "," + count + "," + timeout
+                + "," + interval + "," + suplendwaittime + ","
+                + delassisttime + "," + isCold);
+        //ログファイルの生成
+        locationLog = new LocationLog(activity);
+        L.d("before_makeLogFile");
+        L.d(settingHeader);
+        locationLog.makeLogFile(settingHeader);
+        locationLog.writeLog(
+                locationType + "," + count + "," + timeout
+                        + "," + interval + "," + suplendwaittime + ","
+                        + delassisttime + "," + isCold);
+        locationLog.writeLog(locationHeader);
+
+        activity.showTextViewSetting("測位方式:" + locationType + "\n" + "測位回数:" + count + "\n" + "タイムアウト:" + timeout + "\n" +
+                "測位間隔:" + interval + "\n" + "Cold:" + isCold + "\n"
+                + "suplEndWaitTime:" + suplendwaittime + "\n" + "アシストデータ削除時間:" + delassisttime + "\n");
+
         if(locationType.equals(activity.getResources().getString(R.string.locationUeb))) {
+            L.d("after_UEBService");
+
             locationserviceIntent = new Intent(activity.getApplicationContext(), UebService.class);
             setSetting(locationserviceIntent);
             runService = serviceConnectionUeb;
             filter = new IntentFilter(activity.getResources().getString(R.string.locationUeb));
+            L.d("before_UEBService");
 
         }else if(locationType.equals(activity.getResources().getString(R.string.locationUea))){
+            locationserviceIntent = new Intent(activity.getApplicationContext(), UeaService.class);
             locationserviceIntent = new Intent(activity.getApplicationContext(), UeaService.class);
             setSetting(locationserviceIntent);
             runService = serviceConnectionUea;
@@ -195,6 +222,7 @@ public class MyLocationPresenter {
     public void locationStop(){
         activity.unbindService(runService);
         activity.stopService(locationserviceIntent);
+        locationLog.endLogFile();
     }
 
     public void settingStart(){
@@ -212,9 +240,13 @@ public class MyLocationPresenter {
         long fixtimeEpoch;
         String fixtimeUTC;
         long elapseRealTImeNanos;
+        String locationStarttime, locationStoptime;
+
 
         Location location = new Location(LocationManager.GPS_PROVIDER);
         SimpleDateFormat fixTimeFormat = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ssZZZZ");
+        SimpleDateFormat simpleDateFormatHH = new SimpleDateFormat("HH:mm:ss.SSS");
+
 
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -224,22 +256,28 @@ public class MyLocationPresenter {
             if(receiveCategory.equals(categoryLocation)){
                 location = bundle.getParcelable(activity.getResources().getString(R.string.TagLocation));
                 isFix = bundle.getBoolean(activity.getResources().getString(R.string.TagisFix));
+                locationStarttime = simpleDateFormatHH.format(bundle.getLong(activity.getResources().getString(R.string.TagLocationStarttime)));
+                locationStoptime = simpleDateFormatHH.format(bundle.getLong(activity.getResources().getString(R.string.TagLocationStoptime)));
                 if(isFix){
                     lattude = location.getLatitude();
                     longitude = location.getLongitude();
                     fixtimeEpoch = location.getTime();
                     fixtimeUTC = fixTimeFormat.format(fixtimeEpoch);
-                    elapseRealTImeNanos = location.getElapsedRealtimeNanos();
                 }else{
                     lattude = -1;
                     longitude = -1;
                     fixtimeEpoch = -1;
                     fixtimeUTC = "-1";
-                    elapseRealTImeNanos = -1;
                 }
                 ttff = bundle.getDouble(activity.getResources().getString(R.string.Tagttff));
                 L.d("onReceive");
-                L.d(isFix + "," + lattude + "," + longitude + "," + ttff );
+                L.d(locationStarttime + "," + locationStoptime + "," + isFix + "," + lattude + "," + longitude + "," + ttff + ","
+                    + fixtimeEpoch + "," + fixtimeUTC + "\n");
+                locationLog.writeLog(
+                    locationStarttime + "," + locationStoptime + "," + isFix + "," + location.getLatitude() + "," + location.getLongitude()
+                            + "," + ttff + "," + location.getAccuracy() + "," + fixtimeEpoch + "," + fixtimeUTC);
+                L.d(location.getLatitude() + " " + location.getLongitude());
+
                 activity.showTextViewResult("測位成否："+ isFix + "\n" + "緯度:" + lattude + "\n" + "経度:" + longitude + "\n" + "TTFF：" + ttff
                         + "\n" + "fixTimeEpoch:" + fixtimeEpoch + "\n" + "fixTimeUTC:" + fixtimeUTC + "\n"
                         + "elapseRealTImeNanos:" + elapseRealTImeNanos);
@@ -262,12 +300,12 @@ public class MyLocationPresenter {
         }
     }
     private void setSetting(Intent locationServiceIntent){
-        locationserviceIntent.putExtra(activity.getResources().getString(R.string.settingCount),count);
-        locationserviceIntent.putExtra(activity.getResources().getString(R.string.settingTimeout),timeout);
-        locationserviceIntent.putExtra(activity.getResources().getString(R.string.settingInterval),interval);
-        locationserviceIntent.putExtra(activity.getResources().getString(R.string.settingIsCold),isCold);
-        locationserviceIntent.putExtra(activity.getResources().getString(R.string.settingSuplEndWaitTime),suplendwaittime);
-        locationserviceIntent.putExtra(activity.getResources().getString(R.string.settingDelAssistdataTime),delassisttime);
+        locationServiceIntent.putExtra(activity.getResources().getString(R.string.settingCount),count);
+        locationServiceIntent.putExtra(activity.getResources().getString(R.string.settingTimeout),timeout);
+        locationServiceIntent.putExtra(activity.getResources().getString(R.string.settingInterval),interval);
+        locationServiceIntent.putExtra(activity.getResources().getString(R.string.settingIsCold),isCold);
+        locationServiceIntent.putExtra(activity.getResources().getString(R.string.settingSuplEndWaitTime),suplendwaittime);
+        locationServiceIntent.putExtra(activity.getResources().getString(R.string.settingDelAssistdataTime),delassisttime);
 
     }
 }

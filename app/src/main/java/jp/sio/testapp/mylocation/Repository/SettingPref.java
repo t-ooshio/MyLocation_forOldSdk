@@ -24,7 +24,7 @@ public class SettingPref {
     private final boolean defIsCold = true;
     private final int defSuplEndWaitTime = 1;
     private final int defDelAssistDataTime = 3;
-    private final String defLocationType = "LocationUeb";
+    private final String defLocationType = "UEB";
     //SharedPreference名
     private String PREFNAME = "MyLocationSetting";
 
@@ -72,6 +72,7 @@ public class SettingPref {
         return settingPref.getString(context.getResources().getString(R.string.settingLocationType),defLocationType);
     }
     public int getCount(){
+        L.d(settingPref.getInt(context.getString(R.string.settingCount),defCount) + "");
         return settingPref.getInt(context.getString(R.string.settingCount),defCount);
     }
     public long getInterval(){
