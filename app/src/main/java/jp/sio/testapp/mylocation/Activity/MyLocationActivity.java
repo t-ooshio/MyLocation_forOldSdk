@@ -76,6 +76,11 @@ public class MyLocationActivity extends AppCompatActivity {
         L.d("onStart");
         super.onStart();
     }
+    @Override
+    protected void onDestroy(){
+        presenter.locationStop();
+        super.onDestroy();
+    }
     public void showTextViewResult(String str){
         tvResult.setText(str);
     }

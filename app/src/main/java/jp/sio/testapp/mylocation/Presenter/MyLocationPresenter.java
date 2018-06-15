@@ -74,6 +74,7 @@ public class MyLocationPresenter {
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
+            activity.unbindService(runService);
             uebService = null;
         }
     };
@@ -86,6 +87,8 @@ public class MyLocationPresenter {
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
+            activity.unbindService(runService);
+            ueaService = null;
 
         }
     };
@@ -97,7 +100,8 @@ public class MyLocationPresenter {
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
-
+            activity.unbindService(runService);
+            networkService = null;
         }
     };
     private ServiceConnection serviceConnectionIarea = new ServiceConnection() {
@@ -108,7 +112,8 @@ public class MyLocationPresenter {
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
-
+            activity.unbindService(runService);
+            iareaService = null;
         }
     };
     private ServiceConnection serviceConnectionFlp = new ServiceConnection() {
@@ -145,19 +150,13 @@ public class MyLocationPresenter {
 
     public void mStart(){
         activity.offBtnStop();
-        locationType = settingUsecase.getLocationType();
-        count = settingUsecase.getCount();
-        timeout = settingUsecase.getTimeout();
-        interval = settingUsecase.getInterval();
-        isCold = settingUsecase.getIsCold();
-        suplendwaittime = settingUsecase.getSuplEndWaitTime();
-        delassisttime = settingUsecase.getDelAssistDataTime();
 
         activity.showTextViewState(activity.getResources().getString(R.string.locationStop));
     }
 
     public void locationStart(){
         IntentFilter filter = null;
+        getSetting();
         L.d(locationType + "," + count + "," + timeout
                 + "," + interval + "," + suplendwaittime + ","
                 + delassisttime + "," + isCold);
@@ -244,7 +243,7 @@ public class MyLocationPresenter {
 
 
         Location location = new Location(LocationManager.GPS_PROVIDER);
-        SimpleDateFormat fixTimeFormat = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ssZZZZ");
+        SimpleDateFormat fixTimeFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZZZ");
         SimpleDateFormat simpleDateFormatHH = new SimpleDateFormat("HH:mm:ss.SSS");
 
 
@@ -306,6 +305,16 @@ public class MyLocationPresenter {
         locationServiceIntent.putExtra(activity.getResources().getString(R.string.settingIsCold),isCold);
         locationServiceIntent.putExtra(activity.getResources().getString(R.string.settingSuplEndWaitTime),suplendwaittime);
         locationServiceIntent.putExtra(activity.getResources().getString(R.string.settingDelAssistdataTime),delassisttime);
+
+    }
+    private void getSetting(){
+        locationType = settingUsecase.getLocationType();
+        count = settingUsecase.getCount();
+        timeout = settingUsecase.getTimeout();
+        interval = settingUsecase.getInterval();
+        isCold = settingUsecase.getIsCold();
+        suplendwaittime = settingUsecase.getSuplEndWaitTime();
+        delassisttime = settingUsecase.getDelAssistDataTime();
 
     }
 }

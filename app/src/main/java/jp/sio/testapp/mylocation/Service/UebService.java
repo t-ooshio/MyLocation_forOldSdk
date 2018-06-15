@@ -398,4 +398,5 @@ public class UebService extends Service implements LocationListener {
     @Override
     public void onRebind(Intent intent) {
     }
+
 }

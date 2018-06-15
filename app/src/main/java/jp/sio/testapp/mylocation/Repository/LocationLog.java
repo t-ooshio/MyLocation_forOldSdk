@@ -34,18 +34,9 @@ public class LocationLog {
     private String fileName;
     private String filePath;
     private String dirPath;
-    private BufferedWriter writer;
     private OutputStreamWriter outputStreamWriter;
-
-    private InputStream inputStream;
-    private OutputStream outputStream;
     private FileOutputStream fileOutputStream;
-    private FileInputStream fileInputStream;
 
-
-    //ファイルインデックス強制作成用
-    private MediaScannerConnection scanner;
-    private MediaScannerConnection.MediaScannerConnectionClient scannerConnectionClient;
     private Context context;
 
     public LocationLog(Context context){
@@ -56,34 +47,46 @@ public class LocationLog {
      * Logファイルを作成
      */
     public void makeLogFile(String settingHeader){
+        createLogTime = System.currentTimeMillis();
+        fileName = simpleDateFormat.format(createLogTime) + ".txt";
         if(isExternalStrageWriteable()){
-            createLogTime = System.currentTimeMillis();
-            fileName = simpleDateFormat.format(createLogTime) + ".txt";
+            L.d("ExternalStrage書き込みOK");
             dirPath = Environment.getExternalStorageDirectory().getPath() + "/MyLocation/";
             filePath = dirPath + fileName;
             file = new File(filePath);
-
             try {
                 if(!file.exists()){
                     file.getParentFile().mkdir();
                 }
                 fileOutputStream = new FileOutputStream(file,true);
-                outputStreamWriter = new OutputStreamWriter(fileOutputStream, "UTF-8");
-                L.d("settingHeader:" + settingHeader);
-                outputStreamWriter.append(settingHeader+"\n");
 
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
             }
-            L.d("LogFilePath:" + filePath);
 
         }else{
             L.d("ExternalStrage書き込み不可");
+            try {
+                fileOutputStream = context.openFileOutput(fileName,Context.MODE_APPEND);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
         }
+        try {
+            outputStreamWriter = new OutputStreamWriter(fileOutputStream, "UTF-8");
+            L.d("settingHeader:" + settingHeader);
+            outputStreamWriter.append(settingHeader+"\n");
+            outputStreamWriter.flush();
+
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+        L.d("LogFilePath:" + filePath);
+
     }
 
     /**
@@ -93,9 +96,10 @@ public class LocationLog {
         try {
             L.d("Log:" + log);
             outputStreamWriter.write(log + "\n");
+            outputStreamWriter.flush();
             //outputStreamWriter.newLine();
 
-        } catch (IOException e) {
+        }catch (IOException e) {
             e.printStackTrace();
         }
     }
