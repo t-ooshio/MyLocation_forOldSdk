@@ -68,6 +68,7 @@ public class LocationLog {
             }
 
         }else{
+            //ExternalStrage(/sdcard配下)に書き込めない
             L.d("ExternalStrage書き込み不可");
             try {
                 fileOutputStream = context.openFileOutput(fileName,Context.MODE_APPEND);
@@ -124,11 +125,11 @@ public class LocationLog {
      * ファイルインデックスを作成しなおせば良いと見たのでそれを実装
      */
     public void scanFile() {
-
-        Uri contentUri = Uri.fromFile(file);
-        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, contentUri);
-        context.sendBroadcast(mediaScanIntent);
-
+        if(isExternalStrageWriteable()) {
+            Uri contentUri = Uri.fromFile(file);
+            Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, contentUri);
+            context.sendBroadcast(mediaScanIntent);
+        }
     }
 
     //externalStrageのReadとWriteが可能かチェック

@@ -124,7 +124,8 @@ public class MyLocationPresenter {
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
-
+            activity.unbindService(runService);
+            flpService = null;
         }
     };
 
@@ -218,21 +219,34 @@ public class MyLocationPresenter {
 
     }
 
+    /**
+     * 測位回数満了などで測位を停止する処理
+     */
     public void locationStop(){
         activity.unbindService(runService);
         activity.stopService(locationserviceIntent);
         locationLog.endLogFile();
     }
 
+    /**
+     * Setting表示開始
+     */
     public void settingStart(){
         settingIntent = new Intent(activity.getApplicationContext(), SettingActivity.class);
         activity.startActivity(settingIntent);
     }
 
+    /**
+     * activityにToastを表示する
+     * @param message
+     */
     public void showToast(String message){
         activity.showToast(message);
     }
 
+    /**
+     * 測位結果を受けとるためのReceiver
+     */
     public class LocationReceiver extends BroadcastReceiver{
         Boolean isFix;
         double lattude, longitude, ttff;

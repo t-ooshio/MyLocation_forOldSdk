@@ -56,19 +56,21 @@ public class UebService extends Service implements LocationListener {
 
     //測位中の測位回数
     private int runningCount;
+
+    //測位完了までの時間 TTFF
     private double ttff;
+
+    //SUPLEND WaitTimeの処理関連
+    //onLocationChangeをCountして1回目のみで測位成功時の動作
+    //locationSuccessの呼び出しをする処理を作る
+    private int locationChangeCount;
 
     //測位成功の場合:true 測位失敗の場合:false を設定
     private boolean isLocationFix;
 
     //測位開始時間、終了時間
-    private Calendar calendar = Calendar.getInstance();
     private long locationStartTime;
     private long locationStopTime;
-
-    //ログ出力用のヘッダー文字列 Settingのヘッダーと測位結果のヘッダー
-    private String settingHeader;
-    private String locationHeader;
 
     public class UebService_Binder extends Binder {
         public UebService getService() {
@@ -126,6 +128,7 @@ public class UebService extends Service implements LocationListener {
 
         L.d("locationStart");
 
+        locationChangeCount = 0;
         if (settingIsCold) {
             coldLocation(locationManager);
         }
@@ -261,12 +264,15 @@ public class UebService extends Service implements LocationListener {
         if (powerManager != null) {
             powerManager = null;
         }
-        //locationLog.endLogFile();
     }
 
     @Override
     public void onLocationChanged(final Location location) {
-        locationSuccess(location);
+        locationChangeCount++;
+        L.d("onLocationChanged," + "locationChangeCount:" + locationChangeCount);
+        if(locationChangeCount == 1){
+            locationSuccess(location);
+        }
     }
 
     @Override
