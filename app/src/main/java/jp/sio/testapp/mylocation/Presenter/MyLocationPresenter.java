@@ -238,7 +238,6 @@ public class MyLocationPresenter {
         double lattude, longitude, ttff;
         long fixtimeEpoch;
         String fixtimeUTC;
-        long elapseRealTImeNanos;
         String locationStarttime, locationStoptime;
 
 
@@ -275,11 +274,10 @@ public class MyLocationPresenter {
                 locationLog.writeLog(
                     locationStarttime + "," + locationStoptime + "," + isFix + "," + location.getLatitude() + "," + location.getLongitude()
                             + "," + ttff + "," + location.getAccuracy() + "," + fixtimeEpoch + "," + fixtimeUTC);
-                L.d(location.getLatitude() + " " + location.getLongitude());
 
                 activity.showTextViewResult("測位成否："+ isFix + "\n" + "緯度:" + lattude + "\n" + "経度:" + longitude + "\n" + "TTFF：" + ttff
-                        + "\n" + "fixTimeEpoch:" + fixtimeEpoch + "\n" + "fixTimeUTC:" + fixtimeUTC + "\n"
-                        + "elapseRealTImeNanos:" + elapseRealTImeNanos);
+                        + "\n" + "fixTimeEpoch:" + fixtimeEpoch + "\n" + "fixTimeUTC:" + fixtimeUTC + "\n");
+
                 activity.showTextViewState(activity.getResources().getString(R.string.locationWait));
             }else if(receiveCategory.equals(categoryColdStart)){
                 L.d("ReceiceColdStart");

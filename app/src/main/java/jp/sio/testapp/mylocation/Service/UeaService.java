@@ -127,7 +127,7 @@ public class UeaService extends Service implements LocationListener {
         locationStartTime = System.currentTimeMillis();
         //MyLocationUsecaseで起動時にPermissionCheckを行っているのでここでは行わない
         locationManager.requestSingleUpdate(LocationManager.GPS_PROVIDER,this,null);
-        L.d("requestLocationUpdates");
+        L.d("requestSingleUpdate");
 
         //測位停止Timerの設定
         L.d("SetStopTimer");
@@ -252,7 +252,6 @@ public class UeaService extends Service implements LocationListener {
         if(powerManager != null) {
             powerManager = null;
         }
-        //locationLog.endLogFile();
     }
 
     @Override
@@ -273,7 +272,7 @@ public class UeaService extends Service implements LocationListener {
     private void coldLocation(LocationManager lm){
         sendColdBroadCast(getResources().getString(R.string.categoryColdStart));
         L.d("coldBroadcast:" + getResources().getString(R.string.categoryColdStart));
-        boolean coldResult = lm.sendExtraCommand(LocationManager.GPS_PROVIDER,"delete_aiding_data",null);
+        lm.sendExtraCommand(LocationManager.GPS_PROVIDER,"delete_aiding_data",null);
         try {
             Thread.sleep(settingDelAssistdatatime);
         } catch (InterruptedException e) {
@@ -281,7 +280,6 @@ public class UeaService extends Service implements LocationListener {
             e.printStackTrace();
         }
 
-        L.d("delete_aiding_data:result " + coldResult);
         sendColdBroadCast(getResources().getString(R.string.categoryColdStop));
     }
 

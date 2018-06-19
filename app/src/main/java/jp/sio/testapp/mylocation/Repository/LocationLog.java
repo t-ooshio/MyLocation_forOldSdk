@@ -55,12 +55,15 @@ public class LocationLog {
             filePath = dirPath + fileName;
             file = new File(filePath);
             try {
-                if(!file.exists()){
+                if(!file.getParentFile().exists()){
                     file.getParentFile().mkdir();
+                }
+                if(file.exists()){
+                    file.createNewFile();
                 }
                 fileOutputStream = new FileOutputStream(file,true);
 
-            } catch (FileNotFoundException e) {
+            } catch (IOException e) {
                 e.printStackTrace();
             }
 

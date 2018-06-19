@@ -22,7 +22,7 @@ public class SettingPref {
     private final long defInterval = 75;
     private final long defTimeout = 60;
     private final boolean defIsCold = true;
-    private final int defSuplEndWaitTime = 1;
+    private final int defSuplEndWaitTime = 0;
     private final int defDelAssistDataTime = 3;
     private final String defLocationType = "UEB";
     //SharedPreference名
