@@ -1,5 +1,7 @@
 package jp.sio.testapp.mylocation.Presenter;
 
+import android.annotation.SuppressLint;
+import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -12,6 +14,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 
 import java.text.SimpleDateFormat;
+import java.util.List;
 import java.util.logging.Handler;
 
 import jp.sio.testapp.mylocation.Activity.MyLocationActivity;
@@ -129,6 +132,8 @@ public class MyLocationPresenter {
         }
     };
 
+
+
     private final LocationReceiver locationReceiver = new LocationReceiver();
 
     public MyLocationPresenter(MyLocationActivity activity){
@@ -223,9 +228,50 @@ public class MyLocationPresenter {
      * 測位回数満了などで測位を停止する処理
      */
     public void locationStop(){
-        activity.unbindService(runService);
-        activity.stopService(locationserviceIntent);
-        locationLog.endLogFile();
+        L.d("locationStop");
+
+        //ServiceConnectionの削除
+        /*
+        L.d("ServiceConnectionの削除");
+        if(runService != null) {
+            if (isServiceRunning(activity, runService.getClass())) {
+                L.d("unbindService");
+                activity.unbindService(runService);
+            }
+        }
+        */
+        L.d("ServiceConnectionの削除");
+        if(runService != null) {
+            L.d("unbindService");
+            try {
+                activity.unbindService(runService);
+            }catch (IllegalArgumentException e){
+                e.printStackTrace();
+            }
+        }
+
+
+        //Service1の停止
+        L.d("Serviceの停止");
+        if(locationserviceIntent != null) {
+            activity.stopService(locationserviceIntent);
+        }
+
+        //Receiverの消去
+        L.d("Receiverの消去");
+        try {
+            if (locationReceiver != null) {
+                activity.unregisterReceiver(locationReceiver);
+            }
+        }catch (IllegalArgumentException e){
+            e.printStackTrace();
+        }
+
+        //logファイルの終了
+        L.d("logファイルの終了");
+        if(locationLog != null) {
+            locationLog.endLogFile();
+        }
     }
 
     /**
@@ -247,7 +293,7 @@ public class MyLocationPresenter {
     /**
      * 測位結果を受けとるためのReceiver
      */
-    public class LocationReceiver extends BroadcastReceiver{
+    public class LocationReceiver extends BroadcastReceiver {
         Boolean isFix;
         double lattude, longitude, ttff;
         long fixtimeEpoch;
@@ -265,17 +311,17 @@ public class MyLocationPresenter {
             Bundle bundle = intent.getExtras();
             receiveCategory = bundle.getString(activity.getResources().getString(R.string.category));
 
-            if(receiveCategory.equals(categoryLocation)){
+            if (receiveCategory.equals(categoryLocation)) {
                 location = bundle.getParcelable(activity.getResources().getString(R.string.TagLocation));
                 isFix = bundle.getBoolean(activity.getResources().getString(R.string.TagisFix));
                 locationStarttime = simpleDateFormatHH.format(bundle.getLong(activity.getResources().getString(R.string.TagLocationStarttime)));
                 locationStoptime = simpleDateFormatHH.format(bundle.getLong(activity.getResources().getString(R.string.TagLocationStoptime)));
-                if(isFix){
+                if (isFix) {
                     lattude = location.getLatitude();
                     longitude = location.getLongitude();
                     fixtimeEpoch = location.getTime();
                     fixtimeUTC = fixTimeFormat.format(fixtimeEpoch);
-                }else{
+                } else {
                     lattude = -1;
                     longitude = -1;
                     fixtimeEpoch = -1;
@@ -284,23 +330,23 @@ public class MyLocationPresenter {
                 ttff = bundle.getDouble(activity.getResources().getString(R.string.Tagttff));
                 L.d("onReceive");
                 L.d(locationStarttime + "," + locationStoptime + "," + isFix + "," + lattude + "," + longitude + "," + ttff + ","
-                    + fixtimeEpoch + "," + fixtimeUTC + "\n");
+                        + fixtimeEpoch + "," + fixtimeUTC + "\n");
                 locationLog.writeLog(
-                    locationStarttime + "," + locationStoptime + "," + isFix + "," + location.getLatitude() + "," + location.getLongitude()
-                            + "," + ttff + "," + location.getAccuracy() + "," + fixtimeEpoch + "," + fixtimeUTC);
+                        locationStarttime + "," + locationStoptime + "," + isFix + "," + location.getLatitude() + "," + location.getLongitude()
+                                + "," + ttff + "," + location.getAccuracy() + "," + fixtimeEpoch + "," + fixtimeUTC);
 
-                activity.showTextViewResult("測位成否："+ isFix + "\n" + "緯度:" + lattude + "\n" + "経度:" + longitude + "\n" + "TTFF：" + ttff
+                activity.showTextViewResult("測位成否：" + isFix + "\n" + "緯度:" + lattude + "\n" + "経度:" + longitude + "\n" + "TTFF：" + ttff
                         + "\n" + "fixTimeEpoch:" + fixtimeEpoch + "\n" + "fixTimeUTC:" + fixtimeUTC + "\n");
 
                 activity.showTextViewState(activity.getResources().getString(R.string.locationWait));
-            }else if(receiveCategory.equals(categoryColdStart)){
+            } else if (receiveCategory.equals(categoryColdStart)) {
                 L.d("ReceiceColdStart");
                 activity.showTextViewState(activity.getResources().getString(R.string.locationPositioning));
                 showToast("アシストデータ削除中");
-            }else if(receiveCategory.equals(categoryColdStop)){
+            } else if (receiveCategory.equals(categoryColdStop)) {
                 L.d("ReceiceColdStop");
                 showToast("アシストデータ削除終了");
-            }else if(receiveCategory.equals(categoryServiceStop)){
+            } else if (receiveCategory.equals(categoryServiceStop)) {
                 L.d("ServiceStop");
                 activity.showTextViewState(activity.getResources().getString(R.string.locationStop));
                 showToast("測位サービス終了");
@@ -309,7 +355,12 @@ public class MyLocationPresenter {
                 activity.onBtnSetting();
             }
         }
+
+        public void unreggister() {
+            activity.unregisterReceiver(this);
+        }
     }
+
     private void setSetting(Intent locationServiceIntent){
         locationServiceIntent.putExtra(activity.getResources().getString(R.string.settingCount),count);
         locationServiceIntent.putExtra(activity.getResources().getString(R.string.settingTimeout),timeout);
@@ -319,6 +370,10 @@ public class MyLocationPresenter {
         locationServiceIntent.putExtra(activity.getResources().getString(R.string.settingDelAssistdataTime),delassisttime);
 
     }
+
+    /**
+     * 設定画面で設定した値を取得する
+     */
     private void getSetting(){
         locationType = settingUsecase.getLocationType();
         count = settingUsecase.getCount();
@@ -328,5 +383,25 @@ public class MyLocationPresenter {
         suplendwaittime = settingUsecase.getSuplEndWaitTime();
         delassisttime = settingUsecase.getDelAssistDataTime();
 
+    }
+
+    /**
+     * clsに渡したServiceが起動中か確認する
+     * true:  起動している
+     * false: 起動していない
+     * @param context
+     * @param cls
+     * @return
+     */
+    private boolean isServiceRunning(Context context, Class<?> cls){
+        ActivityManager am = (ActivityManager)context.getSystemService(Context.ACTIVITY_SERVICE);
+        List<ActivityManager.RunningServiceInfo> runningService = am.getRunningServices(Integer.MAX_VALUE);
+        for(ActivityManager.RunningServiceInfo i :runningService){
+            if(cls.getName().equals(i.service.getClassName())){
+                L.d(cls.getName());
+                return true;
+            }
+        }
+        return false;
     }
 }

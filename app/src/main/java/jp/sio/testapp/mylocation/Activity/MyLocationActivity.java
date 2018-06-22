@@ -3,6 +3,7 @@ package jp.sio.testapp.mylocation.Activity;
 import android.content.Context;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -120,6 +121,19 @@ public class MyLocationActivity extends AppCompatActivity {
 
     public void showToast(String message){
         Toast.makeText(this,message,Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event){
+        super.onKeyDown(keyCode,event);
+        if(keyCode == KeyEvent.KEYCODE_BACK){
+            showToast("KEYCODE_BACK");
+            L.d("KEYCODE_BACK");
+            presenter.locationStop();
+            return super.onKeyDown(keyCode,event);
+        }else{
+            return super.onKeyDown(keyCode,event);
+        }
     }
     @Override
     protected void onDestroy(){
