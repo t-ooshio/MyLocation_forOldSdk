@@ -9,7 +9,11 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".Activity.MyLocationActivity">
+
+        <!--縦方向に固定-->
+        <activity android:name=".Activity.MyLocationActivity"
+            android:screenOrientation="portrait">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -21,7 +25,8 @@
             android:value="@integer/google_play_services_version"
             ></meta-data>
 
-        <activity android:name=".Activity.SettingActivity"></activity>
+        <activity android:name=".Activity.SettingActivity"
+            android:screenOrientation="portrait"></activity>
         <service android:name=".Service.UebService"></service>
         <service android:name=".Service.UeaService"></service>
         <service android:name=".Service.NetworkService"></service>
