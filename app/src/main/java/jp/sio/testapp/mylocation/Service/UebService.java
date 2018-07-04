@@ -260,10 +260,14 @@ public class UebService extends Service implements LocationListener {
         stopForeground(true);
         sendServiceEndBroadCast();
 
-        wakeLock.release();
+        if(wakeLock != null) {
+            wakeLock.release();
+            wakeLock = null;
+        }
         if (powerManager != null) {
             powerManager = null;
         }
+        stopSelf();
     }
 
     @Override

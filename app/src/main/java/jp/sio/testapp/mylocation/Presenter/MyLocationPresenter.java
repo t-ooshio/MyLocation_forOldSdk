@@ -254,7 +254,11 @@ public class MyLocationPresenter {
         //Service1の停止
         L.d("Serviceの停止");
         if(locationserviceIntent != null) {
-            activity.stopService(locationserviceIntent);
+            try {
+                activity.stopService(locationserviceIntent);
+            }catch(SecurityException e){
+                e.printStackTrace();
+            }
         }
 
         //Receiverの消去
