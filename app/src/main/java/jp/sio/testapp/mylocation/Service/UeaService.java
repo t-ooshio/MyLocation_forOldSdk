@@ -101,7 +101,7 @@ public class UeaService extends Service implements LocationListener {
         //画面が消灯しないようにPowerManagerを使用
         powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         //PowerManagerの画面つけっぱなし設定SCREEN_BRIGHT_WAKE_LOCK、非推奨の設定値だが試験アプリ的にはあったほうがいいので使用
-        wakeLock = powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, getString(R.string.locationUeb));
+        wakeLock = powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, getString(R.string.locationUea));
         wakeLock.acquire();
 
         //設定値の取得
@@ -378,7 +378,7 @@ public class UeaService extends Service implements LocationListener {
      * Serviceを破棄することを通知するBroadcast
      */
     protected void sendServiceEndBroadCast() {
-        Intent broadcastIntent = new Intent(getResources().getString(R.string.locationUeb));
+        Intent broadcastIntent = new Intent(getResources().getString(R.string.locationUea));
         broadcastIntent.putExtra(getResources().getString(R.string.category), getResources().getString(R.string.categoryServiceEnd));
         sendBroadcast(broadcastIntent);
     }
