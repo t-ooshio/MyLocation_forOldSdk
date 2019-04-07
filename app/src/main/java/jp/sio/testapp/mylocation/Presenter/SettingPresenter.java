@@ -32,10 +32,10 @@ public class SettingPresenter {
             locationTyep = activity.getResources().getString(R.string.locationUea);
         }else if(activity.isRadioButtonNetwork()){
             locationTyep = activity.getResources().getString(R.string.locationNw);
-        }else if(activity.isRadioButtonFlp()){
-            locationTyep = activity.getResources().getString(R.string.locationFlp);
         }else if(activity.isRadioButtoniArea()){
             locationTyep = activity.getResources().getString(R.string.locationiArea);
+        }else if(activity.isRadioButtonTracking()){
+            locationTyep = activity.getResources().getString(R.string.locationTracking);
         }
         L.d("locationType:" + locationTyep + activity.isRadioButtonUeb() + activity.isRadioButtonUea());
         settingusecase.setLocationType(locationTyep);
@@ -51,18 +51,19 @@ public class SettingPresenter {
     /**
      * 現在保存されている値をActivityに表示する
      */
-    public void loadSetting(){
+    public void loadSetting() {
         String locationType = settingusecase.getLocationType();
-        if(locationType.equals(activity.getResources().getString(R.string.locationUeb))) {
+        if (locationType.equals(activity.getResources().getString(R.string.locationUeb))) {
             activity.enableRadioButtonUeb();
-        }else if(locationType.equals(activity.getResources().getString(R.string.locationUea))) {
+        } else if (locationType.equals(activity.getResources().getString(R.string.locationUea))) {
             activity.enableRadioButtonUea();
-        }else if(locationType.equals(activity.getResources().getString(R.string.locationNw))) {
+        } else if (locationType.equals(activity.getResources().getString(R.string.locationNw))) {
             activity.enableRadioButtonNetwork();
-        }else if(locationType.equals(activity.getResources().getString(R.string.locationFlp))) {
-            activity.enableRadioButtonFlp();
-        }else if(locationType.equals(activity.getResources().getString(R.string.locationiArea)))
+        } else if (locationType.equals(activity.getResources().getString(R.string.locationiArea)))
             activity.enableRadioButtoniArea();
+        else if(locationType.equals(activity.getResources().getString(R.string.locationTracking)))
+            activity.enableRadioButtonTracking();
+
         activity.setCount(settingusecase.getCount());
         activity.setInterval(settingusecase.getInterval());
         activity.setTimeout(settingusecase.getTimeout());

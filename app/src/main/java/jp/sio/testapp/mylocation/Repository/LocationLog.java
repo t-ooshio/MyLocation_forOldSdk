@@ -29,7 +29,7 @@ import jp.sio.testapp.mylocation.L;
 public class LocationLog {
     private long createLogTime;
     private SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
-
+    private String LINEFEED = "\r\n";
     private File file;
     private String fileName;
     private String filePath;
@@ -79,7 +79,7 @@ public class LocationLog {
         try {
             outputStreamWriter = new OutputStreamWriter(fileOutputStream, "UTF-8");
             L.d("settingHeader:" + settingHeader);
-            outputStreamWriter.append(settingHeader+"\n");
+            outputStreamWriter.append(settingHeader + LINEFEED);
             outputStreamWriter.flush();
 
         } catch (UnsupportedEncodingException e) {
@@ -99,7 +99,7 @@ public class LocationLog {
     public void writeLog(String log){
         try {
             L.d("Log:" + log);
-            outputStreamWriter.write(log + "\n");
+            outputStreamWriter.write(log + LINEFEED);
             outputStreamWriter.flush();
             //outputStreamWriter.newLine();
 

@@ -1,6 +1,5 @@
 package jp.sio.testapp.mylocation.Presenter;
 
-import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -15,15 +14,14 @@ import android.os.IBinder;
 
 import java.text.SimpleDateFormat;
 import java.util.List;
-import java.util.logging.Handler;
 
 import jp.sio.testapp.mylocation.Activity.MyLocationActivity;
 import jp.sio.testapp.mylocation.Activity.SettingActivity;
 import jp.sio.testapp.mylocation.L;
 import jp.sio.testapp.mylocation.R;
-import jp.sio.testapp.mylocation.Service.FlpService;
 import jp.sio.testapp.mylocation.Service.IareaService;
 import jp.sio.testapp.mylocation.Service.NetworkService;
+import jp.sio.testapp.mylocation.Service.TrackingService;
 import jp.sio.testapp.mylocation.Service.UeaService;
 import jp.sio.testapp.mylocation.Service.UebService;
 import jp.sio.testapp.mylocation.Usecase.MyLocationUsecase;
@@ -55,7 +53,7 @@ public class MyLocationPresenter {
     private UeaService ueaService;
     private NetworkService networkService;
     private IareaService iareaService;
-    private FlpService flpService;
+    private TrackingService trackingService;
 
     private String locationType;
     private int count;
@@ -119,16 +117,16 @@ public class MyLocationPresenter {
             iareaService = null;
         }
     };
-    private ServiceConnection serviceConnectionFlp = new ServiceConnection() {
+    private ServiceConnection serviceConnectionTracking = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder service) {
-            flpService = ((FlpService.FlpService_Binder)service).getService();
+            trackingService = ((TrackingService.TrackingService_Binder)service).getService();
         }
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
             activity.unbindService(runService);
-            flpService = null;
+            iareaService = null;
         }
     };
 
@@ -183,7 +181,6 @@ public class MyLocationPresenter {
 
         if(locationType.equals(activity.getResources().getString(R.string.locationUeb))) {
             L.d("after_UEBService");
-
             locationserviceIntent = new Intent(activity.getApplicationContext(), UebService.class);
             setSetting(locationserviceIntent);
             runService = serviceConnectionUeb;
@@ -191,7 +188,6 @@ public class MyLocationPresenter {
             L.d("before_UEBService");
 
         }else if(locationType.equals(activity.getResources().getString(R.string.locationUea))){
-            locationserviceIntent = new Intent(activity.getApplicationContext(), UeaService.class);
             locationserviceIntent = new Intent(activity.getApplicationContext(), UeaService.class);
             setSetting(locationserviceIntent);
             runService = serviceConnectionUea;
@@ -209,11 +205,11 @@ public class MyLocationPresenter {
             runService = serviceConnectionIarea;
             filter = new IntentFilter(activity.getResources().getString(R.string.locationiArea));
 
-        }else if(locationType.equals(activity.getResources().getString(R.string.locationFlp))){
-            locationserviceIntent = new Intent(activity.getApplicationContext(), FlpService.class);
+        }else if(locationType.equals(activity.getResources().getString(R.string.locationTracking))){
+            locationserviceIntent = new Intent(activity.getApplicationContext(), TrackingService.class);
             setSetting(locationserviceIntent);
-            runService = serviceConnectionFlp;
-            filter = new IntentFilter(activity.getResources().getString(R.string.locationFlp));
+            runService = serviceConnectionTracking;
+            filter = new IntentFilter(activity.getResources().getString(R.string.locationTracking));
 
         }else{
             showToast("予期せぬ測位方式");

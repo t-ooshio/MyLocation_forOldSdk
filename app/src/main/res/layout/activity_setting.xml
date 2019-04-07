@@ -41,13 +41,14 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" />
                 <RadioButton
-                    android:id="@+id/rbNw"
-                    android:text="@string/locationNw"
+                    android:id="@+id/rbTracking"
+                    android:text="@string/locationTracking"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" />
+
                 <RadioButton
-                    android:id="@+id/rbFlp"
-                    android:text="@string/locationFlp"
+                    android:id="@+id/rbNw"
+                    android:text="@string/locationNw"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" />
                 <RadioButton

@@ -29,6 +29,7 @@
     <string name="locationList">測位種別</string>
     <string name="locationUeb">UEB</string>
     <string name="locationUea">UEA</string>
+    <string name="locationTracking">Tracking</string>
     <string name="locationNw">NetworkProvider</string>
     <string name="locationFlp">FLP</string>
     <string name="locationiArea">OpeniArea</string>

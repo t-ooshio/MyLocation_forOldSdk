@@ -28,8 +28,8 @@ public class SettingActivity extends AppCompatActivity {
     private RadioButton radioButtonUeb;
     private RadioButton radioButtonUea;
     private RadioButton radioButtonNetwork;
-    private RadioButton radioButtonFlp;
     private RadioButton radioButtoniArea;
+    private RadioButton radioButtonTracking;
     private CheckBox checkBoxisCold;
 
     @Override
@@ -50,7 +50,7 @@ public class SettingActivity extends AppCompatActivity {
         radioButtonUea = (RadioButton)findViewById(R.id.rbUea);
         radioButtonNetwork = (RadioButton)findViewById(R.id.rbNw);
         radioButtoniArea = (RadioButton)findViewById(R.id.rbiArea);
-        radioButtonFlp = (RadioButton)findViewById(R.id.rbFlp);
+        radioButtonTracking = (RadioButton)findViewById(R.id.rbTracking);
         checkBoxisCold = (CheckBox)findViewById(R.id.checkboxIsCold);
     }
 
@@ -92,12 +92,13 @@ public class SettingActivity extends AppCompatActivity {
     public void enableRadioButtonNetwork(){
         radioButtonNetwork.setChecked(true);
     }
-    public void enableRadioButtonFlp(){
-        radioButtonFlp.setChecked(true);
-    }
     public void enableRadioButtoniArea(){
         radioButtoniArea.setChecked(true);
     }
+    public void enableRadioButtonTracking(){
+        radioButtonTracking.setChecked(true);
+    }
+
     public void enableIsCold(){
         checkBoxisCold.setChecked(true);
     }
@@ -138,12 +139,13 @@ public class SettingActivity extends AppCompatActivity {
     public boolean isRadioButtonNetwork(){
         return radioButtonNetwork.isChecked();
     }
-    public boolean isRadioButtonFlp(){
-        return radioButtonFlp.isChecked();
-    }
     public boolean isRadioButtoniArea(){
         return radioButtoniArea.isChecked();
     }
+    public boolean isRadioButtonTracking(){
+        return radioButtonTracking.isChecked();
+    }
+
     public boolean isColdCheck(){
         return checkBoxisCold.isChecked();
     }
