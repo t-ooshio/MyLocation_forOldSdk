@@ -40,6 +40,8 @@
     <string name="Tagttff">TTFF</string>
     <string name="TagLocationStarttime">locationStartTime</string>
     <string name="TagLocationStoptime">locationStopTime</string>
+    <string name="TagSuccessCount">successCount</string>
+    <string name="TagFailCount">failCount</string>
 
     <!--ServiceからPresentationが受け取る値の種類-->
     <!--この値によってActivityに対する処理を変える-->

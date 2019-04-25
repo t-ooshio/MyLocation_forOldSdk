@@ -56,6 +56,8 @@ public class UebService extends Service implements LocationListener {
 
     //測位中の測位回数
     private int runningCount;
+    private int successCount;
+    private int failCount;
 
     //測位完了までの時間 TTFF
     private double ttff;
@@ -113,7 +115,10 @@ public class UebService extends Service implements LocationListener {
         settingIsCold = intent.getBooleanExtra(getBaseContext().getString(R.string.settingIsCold), true);
         settingSuplEndWaitTime = intent.getIntExtra(getResources().getString(R.string.settingSuplEndWaitTime), 0) * 1000;
         settingDelAssistdatatime = intent.getIntExtra(getResources().getString(R.string.settingDelAssistdataTime), 0) * 1000;
+
         runningCount = 0;
+        successCount = 0;
+        failCount = 0;
 
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         locationStart();
@@ -129,6 +134,7 @@ public class UebService extends Service implements LocationListener {
         L.d("locationStart");
 
         locationChangeCount = 0;
+
         if (settingIsCold) {
             coldLocation(locationManager);
         }
@@ -157,6 +163,7 @@ public class UebService extends Service implements LocationListener {
             stopTimer = null;
         }
         runningCount++;
+        successCount++;
         isLocationFix = true;
         ttff = (double) (locationStopTime - locationStartTime) / 1000;
         //測位結果の通知
@@ -164,7 +171,7 @@ public class UebService extends Service implements LocationListener {
             @Override
             public void run() {
                 L.d("resultHandler.post");
-                sendLocationBroadCast(isLocationFix, location, locationStartTime, locationStopTime);
+                sendLocationBroadCast(isLocationFix,successCount, failCount,  location, locationStartTime, locationStopTime);
             }
         });
         L.d(location.getLatitude() + " " + location.getLongitude());
@@ -180,7 +187,8 @@ public class UebService extends Service implements LocationListener {
         }
 
         //測位回数が設定値に到達しているかチェック
-        if (runningCount == settingCount && settingCount != 0) {
+        L.d("settingCount=" + settingCount + " runningCount=" + runningCount);
+        if ((runningCount == settingCount) && settingCount != 0) {
             serviceStop();
         } else {
             //回数満了してなければ測位間隔Timerを設定して次の測位の準備
@@ -205,6 +213,7 @@ public class UebService extends Service implements LocationListener {
         //測位終了の時間を取得
         locationStopTime = System.currentTimeMillis();
         runningCount++;
+        failCount++;
         isLocationFix = false;
         locationManager.removeUpdates(this);
         ttff = (double) (locationStopTime - locationStartTime) / 1000;
@@ -218,11 +227,12 @@ public class UebService extends Service implements LocationListener {
             public void run() {
                 L.d("resultHandler.post");
                 Location location = new Location(LocationManager.GPS_PROVIDER);
-                sendLocationBroadCast(isLocationFix, location, locationStartTime, locationStopTime);
+                sendLocationBroadCast(isLocationFix, successCount, failCount, location, locationStartTime, locationStopTime);
             }
         });
         //測位回数が設定値に到達しているかチェック
-        if (settingCount == runningCount && settingCount != 0) {
+        L.d("settingCount=" + settingCount + " runningCount=" + runningCount);
+        if ((settingCount == runningCount) && settingCount != 0) {
             serviceStop();
         } else {
             L.d("FailedのIntervalTimer");
@@ -343,11 +353,13 @@ public class UebService extends Service implements LocationListener {
      * 測位完了を上に通知するBroadcast 測位結果を入れる
      *
      * @param fix               測位成功:True 失敗:False
+     * @param successCount      測位成功回数
+     * @param failCount         測位失敗回数
      * @param location          測位結果
      * @param locationStartTime 測位API実行の時間
      * @param locationStopTime  測位API停止の時間
      */
-    protected void sendLocationBroadCast(Boolean fix, Location location, long locationStartTime, long locationStopTime) {
+    protected void sendLocationBroadCast(Boolean fix,int successCount, int failCount, Location location, long locationStartTime, long locationStopTime) {
         L.d("sendLocation");
         Intent broadcastIntent = new Intent(getResources().getString(R.string.locationUeb));
         broadcastIntent.putExtra(getResources().getString(R.string.category), getResources().getString(R.string.categoryLocation));
@@ -355,6 +367,8 @@ public class UebService extends Service implements LocationListener {
         broadcastIntent.putExtra(getResources().getString(R.string.TagLocation), location);
         broadcastIntent.putExtra(getResources().getString(R.string.Tagttff), ttff);
         broadcastIntent.putExtra(getResources().getString(R.string.TagLocationStarttime), locationStartTime);
+        broadcastIntent.putExtra(getResources().getString(R.string.TagSuccessCount),successCount);
+        broadcastIntent.putExtra(getResources().getString(R.string.TagFailCount),failCount);
         broadcastIntent.putExtra(getResources().getString(R.string.TagLocationStoptime), locationStopTime);
 
         sendBroadcast(broadcastIntent);
@@ -383,6 +397,7 @@ public class UebService extends Service implements LocationListener {
      * Serviceを破棄することを通知するBroadcast
      */
     protected void sendServiceEndBroadCast() {
+        L.d("sendServiceEndBroadcast");
         Intent broadcastIntent = new Intent(getResources().getString(R.string.locationUeb));
         broadcastIntent.putExtra(getResources().getString(R.string.category), getResources().getString(R.string.categoryServiceEnd));
         sendBroadcast(broadcastIntent);

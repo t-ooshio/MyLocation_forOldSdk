@@ -91,6 +91,7 @@ public class MyLocationActivity extends AppCompatActivity {
 
     public void pushBtnStart(){
         showTextViewState("測位中");
+        clearView();
         presenter.locationStart();
 
     }
@@ -125,6 +126,9 @@ public class MyLocationActivity extends AppCompatActivity {
 
     public void showToast(String message){
         Toast.makeText(this,message,Toast.LENGTH_SHORT).show();
+    }
+    public void clearView(){
+        tvResult.setText("");
     }
 
     @Override
