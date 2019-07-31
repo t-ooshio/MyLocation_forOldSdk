@@ -328,7 +328,7 @@ public class MyLocationPresenter {
                         locationStarttime + "," + locationStoptime + "," + isFix + "," + location.getLatitude() + "," + location.getLongitude()
                                 + "," + ttff + "," + location.getAccuracy() + "," + fixtimeEpoch + "," + fixtimeUTC);
 
-                activity.showTextViewResult("測位成否:" + isFix + "\n" + "緯度:" + lattude + "\n" + "経度:" + longitude + "\n" + "TTFF：" + ttff
+                activity.showTextViewResult("測位成否:" + isFix + "\n" + "緯度:" + lattude + "\n" + "経度:" + longitude + "\n" + "TTFF：" + ttff + "\n" + "Accuracy:" + location.getAccuracy()
                         + "\n" + "成功回数:" + sucCnt + "\n"  + "失敗回数:" + failCnt + "\n" + "fixTimeEpoch:" + fixtimeEpoch + "\n" + "fixTimeUTC:" + fixtimeUTC + "\n");
 
                 activity.showTextViewState(activity.getResources().getString(R.string.locationWait));

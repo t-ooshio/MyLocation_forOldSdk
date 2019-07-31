@@ -124,12 +124,12 @@ public class MyLocationActivity extends AppCompatActivity {
         buttonSetting.setEnabled(false);
     }
 
-    public void showToast(String message){
-        Toast.makeText(this,message,Toast.LENGTH_SHORT).show();
-    }
-    public void clearView(){
+    public void showToast(String message){{
         tvResult.setText("");
     }
+        Toast.makeText(this,message,Toast.LENGTH_SHORT).show();
+    }
+    public void clearView(){}
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event){
